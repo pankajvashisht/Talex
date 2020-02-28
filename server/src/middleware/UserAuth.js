@@ -10,21 +10,17 @@ const UserAuth = async (Request, res, next) => {
       if (!Request.headers.hasOwnProperty('authorization_key')) {
         throw new ApiError(lang[Request.lang].authKeyRequired,400);
       }
-      let user_details = await DB.first(`select users.id, otp,password,first_name,about_us, last_name, email, profile,status,cover_pic,device_type,device_token 
-      ,state,
-      age,
-      sex,
-      marital_status,
-      speck_romanina,
-      zip,
-      website,
-      business_hours,
-      description,
-      category,
-      city,
-      location from user_auths join  users on (users.id = user_auths.user_id) where
-      user_auths.authorization_key='${Request.headers.authorization_key}'`);
-      
+      let user_details = await DB.first(`select users.id, username, name, status,
+				email,
+				phone,
+				cover_pic,
+				about_us,
+				profile,
+				is_private,
+        verfiy_badge,
+        password,
+        location from user_auths join  users on (users.id = user_auths.user_id) where
+        user_auths.authorization_key='${Request.headers.authorization_key}'`);
       if (user_details.length > 0) {
         Request.body.user_id = user_details[0].id;
         Request.body.userInfo = user_details[0];

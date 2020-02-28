@@ -2,16 +2,15 @@ const ApiController = require('./ApiController');
 const Db = require('../../../libary/sqlBulider');
 const ApiError = require('../../Exceptions/ApiError');
 const app = require('../../../libary/CommanMethod');
-const { lang,Constants } = require('../../../config');
+const { lang, Constants } = require('../../../config');
 let apis = new ApiController();
 let DB = new Db();
 
 module.exports = {
-	sendRequest: async (Request) => {
+	follow: async (Request) => {
 		const required = {
 			friend_id: Request.body.friend_id,
-			user_id: Request.body.user_id,
-			is_request: 1
+			user_id: Request.body.user_id
 		};
 		const requestData = await apis.vaildation(required, {});
 		const user_info = await DB.find('users', 'first', {
@@ -19,9 +18,10 @@ module.exports = {
 				'users.id': requestData.friend_id
 			},
 			join: [ 'user_auths on users.id = user_auths.user_id' ],
-			fields: [ 'users.id as user_id' ]
+			fields: [ 'users.id as user_id', 'is_private' ]
 		});
 		if (!user_info) throw new ApiError(lang[Request.lang].userNotFound, 404);
+		if (user_info.is_private) requestData.is_request = 1;
 		const friendRequest = await DB.find('friends', 'first', {
 			conditions: {
 				user_id: requestData.user_id,
@@ -32,11 +32,11 @@ module.exports = {
 		let message = '';
 		if (friendRequest) {
 			await DB.first(`delete from friends where id = ${friendRequest.id}`);
-			message = lang[Request.lang].requestCancel;
+			message = 'unfollow users successfully';
 		} else {
 			await DB.save('friends', requestData);
-			sendPush(user_info, 'Request send Successfully', 5);
-			message = lang[Request.lang].requestSend;
+			sendPush(user_info, 'start following you', 5);
+			message = 'Follow successfully';
 		}
 		return {
 			message,
@@ -109,11 +109,6 @@ module.exports = {
 		}
 		checkPost.is_request = 0;
 		await DB.save('friends', checkPost);
-		await DB.save('friends', {
-			user_id,
-			friend_id,
-			is_request: 0
-		});
 		const { first_name, last_name } = Request.body.userInfo;
 		DB.save('notifications', {
 			user_id: requestData.friend_id,
@@ -150,11 +145,10 @@ module.exports = {
 				'cover_pic',
 				'about_us',
 				'profile',
-				'user_type',
-				`(select count(id) from friends where user_id=${user_id} and friend_id=users.id and is_request=0) as is_friend`,
+				`(select count(id) from friends where user_id=${user_id} and friend_id=users.id) as i_follow`,
 				`(select count(id) from friends where user_id=${user_id} and friend_id=users.id and is_request=1) as i_request`,
 				`(select count(id) from friends where friend_id=${user_id} and user_id=users.id and is_request=1) as is_request`,
-				`(select count(id) from favorites_users where user_id=${user_id} and friend_id=users.id) as is_fav`
+				`(select count(id) from friends where friend_id=${user_id} and user_id=users.id) as is_follow`
 			],
 			limit: [ offset, limit ],
 			orderBy: [ 'friends.id desc' ]
@@ -162,14 +156,14 @@ module.exports = {
 		if (search) {
 			condition.conditions['like'] = {
 				first_name: search,
-				last_name: search,
+				last_name: search
 			};
 		}
 		if (JSON.parse(filter)) {
-			const searchParameter =  Constants.UserSearch;
+			const searchParameter = Constants.UserSearch;
 			searchParameter.forEach((value) => {
 				if (Request.query.hasOwnProperty(value)) {
-					if (Request.query[value]) { 
+					if (Request.query[value]) {
 						condition.conditions[value] = Request.query[value];
 					}
 				}
@@ -208,10 +202,10 @@ module.exports = {
 				'about_us',
 				'profile',
 				'user_type',
-				`(select count(id) from friends where user_id=${user_id} and friend_id=users.id and is_request=0) as is_friend`,
+				`(select count(id) from friends where user_id=${user_id} and friend_id=users.id) as i_follow`,
 				`(select count(id) from friends where user_id=${user_id} and friend_id=users.id and is_request=1) as i_request`,
 				`(select count(id) from friends where friend_id=${user_id} and user_id=users.id and is_request=1) as is_request`,
-				`(select count(id) from favorites_users where user_id=${user_id} and friend_id=users.id) as is_fav`
+				`(select count(id) from friends where friend_id=${user_id} and user_id=users.id) as is_follow`
 			],
 			limit: [ offset, limit ],
 			orderBy: [ 'users.first_name desc' ]
@@ -219,14 +213,14 @@ module.exports = {
 		if (search) {
 			condition.conditions['like'] = {
 				first_name: search,
-				last_name: search,
+				last_name: search
 			};
 		}
 		if (JSON.parse(filter)) {
-			const searchParameter =  Constants.UserSearch;
+			const searchParameter = Constants.UserSearch;
 			searchParameter.forEach((value) => {
 				if (Request.query.hasOwnProperty(value)) {
-					if (Request.query[value]) { 
+					if (Request.query[value]) {
 						condition.conditions[value] = Request.query[value];
 					}
 				}
@@ -249,5 +243,5 @@ const sendPush = (User, message = '', code = 6) => {
 		notification_code: code,
 		body: User
 	};
-  apis.sendPush(pushObject, User.user_id);
+	apis.sendPush(pushObject, User.user_id);
 };

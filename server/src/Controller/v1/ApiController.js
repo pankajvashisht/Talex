@@ -93,28 +93,28 @@ class ApiController {
 			totalPage = 1;
 		}
 		return {
-			currentPage: page + 1,
+			currentPage: page,
 			totalPage,
 			totalRecord: totalRecord[0].totalRecord,
 			limit
 		};
-  }
-  
-  async sendPush(pushObject, user_id) { 
-    const User = await DB.find('user_auths', 'all', {
-      conditions: {
-        user_id
-      }
+	}
+
+	async sendPush(pushObject, user_id) {
+		const User = await DB.find('user_auths', 'all', {
+			conditions: {
+				user_id
+			}
 		});
-    setTimeout(() => {
-      User.forEach((value) => { 
-        if (value.device_token) { 
-          pushObject['token'] = value.device_token;
-			    App.send_push(pushObject);
-        }
-      });
+		setTimeout(() => {
+			User.forEach((value) => {
+				if (value.device_token) {
+					pushObject['token'] = value.device_token;
+					App.send_push(pushObject);
+				}
+			});
 		}, 100);
-  }
+	}
 
 	async userDetails(id) {
 		const UserDetails = await DB.find('users', 'first', {
@@ -123,43 +123,25 @@ class ApiController {
 			},
 			fields: [
 				'id',
-				'first_name',
-				'last_name',
+				'username',
+				'name',
 				'status',
 				'email',
 				'phone',
 				'cover_pic',
 				'about_us',
 				'profile',
-				'state',
-				'age',
-				'sex',
-				'marital_status',
-				'speck_romanina',
-				'user_type',
-				'zip',
-				'website',
-				'business_hours',
-				'description',
-				'category',
-        'location',
-        'phone_code',
-				'city'
+				'is_private',
+				'verfiy_badge'
 			]
-    });
-    UserDetails.category_info = {};
-    if (UserDetails.business_hours && UserDetails.user_type === 2) {
-      UserDetails.business_hours = JSON.parse(UserDetails.business_hours);
-      UserDetails.category_info = await DB.find('business_categories', 'all', {
-        conditions: {
-          IN: {
-            id:UserDetails.category
-          } 
-        },
-        fields:['id','name']
-      });
-    }
-    return UserDetails;
+		});
+		if (UserDetails.profile.length > 0) {
+			UserDetails.profile = appURL + 'uploads/' + UserDetails.profile;
+		}
+		if (UserDetails.cover_pic.length > 0) {
+			UserDetails.cover_pic = appURL + 'uploads/' + UserDetails.cover_pic;
+		}
+		return UserDetails;
 	}
 }
 

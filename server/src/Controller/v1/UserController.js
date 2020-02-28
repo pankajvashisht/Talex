@@ -2,45 +2,32 @@ const ApiController = require('./ApiController');
 const app = require('../../../libary/CommanMethod');
 const Db = require('../../../libary/sqlBulider');
 const ApiError = require('../../Exceptions/ApiError');
-const { lang, Constants } = require('../../../config');
+const { lang } = require('../../../config');
 const DB = new Db();
 
 class UserController extends ApiController {
 	constructor() {
 		super();
-		this.addUser = this.addUser.bind(this);
+		this.signupEmail = this.signupEmail.bind(this);
+		this.signupPhone = this.signupPhone.bind(this);
 		this.loginUser = this.loginUser.bind(this);
+		this.soicalLogin = this.soicalLogin.bind(this);
 	}
 
-	async addUser(req) {
+	async signupEmail(req) {
 		let required = {
-			first_name: req.body.first_name,
+			username: req.body.username,
 			email: req.body.email,
-			phone: req.body.phone,
-			phone_code: req.body.phone_code,
 			password: req.body.password,
 			device_id: req.body.device_id,
-			user_type: req.body.user_type,
+			verfiy_badge: false,
+			status: 0,
 			checkexist: 1
 		};
 		let non_required = {
 			device_type: req.body.device_type,
 			device_token: req.body.device_token,
-			last_name: req.body.last_name,
-			location: req.body.location,
-			state: req.body.state,
-			age: req.body.age,
-			sex: req.body.sex,
-			marital_status: req.body.marital_status,
-			speck_romanina: req.body.speck_romanina,
-			zip: req.body.zip,
-			website: req.body.website,
-			business_hours: req.body.business_hours,
-			description: req.body.description,
-			category: req.body.category,
-			city: req.body.city,
 			authorization_key: app.createToken(),
-			otp: 1111 //app.randomNumber(),
 		};
 
 		let request_data = await super.vaildation(required, non_required);
@@ -55,26 +42,50 @@ class UserController extends ApiController {
 		setTimeout(() => {
 			this.saveAuth(request_data, user_id);
 			this.mails(request_data);
-			if (req.files && req.files.profile) {
-				DB.save('users_pictures', {
-					user_id: user_id,
-					pictures: request_data.profile,
-					type: 1
-				});
-			}
-			if(req.files && req.files.cover_pic){
-				DB.save('users_pictures', {
-					user_id,
-					pictures: request_data.cover_pic,
-					type: 2
-				});
-			}
 		}, 100);
+		const userInfo = await super.userDetails(user_id);
+		userInfo.authorization_key = request_data.authorization_key;
 		return {
 			message: lang[req.lang].signup,
-			data: {
-				authorization_key: request_data.authorization_key
+			data: userInfo
+		};
+	}
+
+	async signupPhone(req) {
+		let required = {
+			phone: req.body.phone,
+			device_id: req.body.device_id,
+			verfiy_badge: false,
+			status: 1,
+			checkexist: 0
+		};
+		let non_required = {
+			device_type: req.body.device_type,
+			device_token: req.body.device_token,
+			authorization_key: app.createToken(),
+		};
+		const requestData = await super.vaildation(required, non_required);
+		const checkPhone = await DB.find('users', 'first', {
+			conditions: {
+				phone: requestData.phone
 			}
+		});
+		if (checkPhone) requestData.id = checkPhone.id;
+		const user_id = await DB.save('users', requestData);
+		if (!checkPhone) { 
+			await DB.save('users', {
+				id: user_id,
+				username: `${user_id}User`
+			})
+		}
+		setTimeout(() => {
+			this.saveAuth(requestData, user_id);
+		}, 100);
+		const userInfo = await super.userDetails(user_id);
+		userInfo.authorization_key = requestData.authorization_key;
+		return {
+			message: lang[req.lang].signup,
+			data: userInfo
 		};
 	}
 
@@ -93,7 +104,8 @@ class UserController extends ApiController {
 		const required = {
 			social_id: req.body.social_id,
 			social_token: req.body.social_token,
-			soical_type: req.body.soical_type
+			soical_type: req.body.soical_type,
+			device_id: req.body.device_id,
 		};
 		const non_required = {
 			device_type: req.body.device_type,
@@ -116,8 +128,17 @@ class UserController extends ApiController {
 		});
 		if (soical_id) {
 			request_data.id = soical_id.id;
-		}
+		} 
 		let id = await DB.save('users', request_data);
+		setTimeout(() => {
+			this.saveAuth(requestData, id);
+		}, 100);
+		if (!soical_id) { 
+			await DB.save('users', {
+				id,
+				username: `${id}User`
+			})
+		}
 		return {
 			message: 'User login successfully',
 			data: await super.userDetails(id)
@@ -141,10 +162,10 @@ class UserController extends ApiController {
 		};
 	}
 
-	async bussinessCatgeory(Request) {
+	async Catgeory(Request) {
 		return {
 			message: lang[Request.lang].bussinessCatgeory,
-			data: await DB.find('business_categories', 'all')
+			data: await DB.find('categories', 'all')
 		};
 	}
 
@@ -159,7 +180,7 @@ class UserController extends ApiController {
 			conditions: {
 				email: request_data.email
 			},
-			fields: [ 'id', 'email', 'first_name', 'last_name' ]
+			fields: [ 'id', 'email', 'username', 'name' ]
 		});
 		if (!user_info) throw new ApiError(lang[req.lang].mailNotFound);
 		user_info.otp = request_data.otp;
@@ -170,8 +191,8 @@ class UserController extends ApiController {
 			subject: 'Forgot Password',
 			template: 'forgot_password',
 			data: {
-				first_name: user_info.first_name,
-				last_name: user_info.last_name,
+				first_name: user_info.username,
+				last_name: user_info.name,
 				url: appURL + 'users/change_password/' + user_info.forgot_password_hash
 			}
 		};
@@ -229,28 +250,7 @@ class UserController extends ApiController {
 		}
 		throw new ApiError(lang[req.lang].wrongLogin);
 	}
-	async usersPic(Request) {
-		const user_id = Request.query.user_id || Request.body.user_id;
-		let offset = Request.params.offset || 1;
-		const limit = Request.query.limit || 10;
-		if (user_id === undefined) throw new ApiError('user_id is required', 422);
-		offset = (offset - 1) * limit;
-		const condition = {
-			conditions: {
-				user_id
-			},
-			limit: [ offset, limit ],
-			orderBy: [ 'id desc' ]
-		};
-		const allpic = await DB.find('users_pictures', 'all', condition);
-		return {
-			message: lang[Request.lang].allPics,
-			data: {
-				pagination: await super.Paginations('users_pictures', condition, offset, limit),
-				result: app.addUrl(allpic, 'pictures')
-			}
-		};
-	}
+	
 	async appInfo(req) {
 		const app_info = await DB.find('app_informations', 'all');
 		return {
@@ -276,17 +276,14 @@ class UserController extends ApiController {
 		};
 	}
 	async userListing(Request) {
-		const user_type = JSON.parse(Request.query.user_type) || 1;
 		const user_id = Request.body.user_id || 0;
 		let offset = Request.params.offset || 1;
 		const limit = Request.query.limit || 10;
 		const search = Request.query.search || '';
-		const filter = Request.query.filter || false;
-		const category_id = Request.query.category_id || 0;
+		const page = parseInt(offset);
 		offset = (offset - 1) * limit;
 		const condition = {
 			conditions: {
-				user_type: user_type,
 				status: 1,
 				NotEqual: {
 					id: user_id
@@ -294,59 +291,34 @@ class UserController extends ApiController {
 			},
 			fields: [
 				'users.id',
-				'first_name',
-				'last_name',
+				'username',
+				'name',
 				'status',
 				'email',
 				'phone',
 				'cover_pic',
 				'about_us',
 				'profile',
-				'state',
-				'age',
-				'sex',
-				'marital_status',
-				'speck_romanina',
-				'zip',
-				'website',
-				'business_hours',
-				'description',
-				'category',
-				'location',
-				'phone_code',
-				'user_type',
-				'city',
-				`0 as is_friend`,
+				'is_private',
+				'verfiy_badge',
+				`0 as is_follow`,
 				`0 as i_request`,
 				`0 as is_request`,
-				`0 as is_fav`
+				`0 as i_follow`
 			],
 			limit: [ offset, limit ],
-			orderBy: [ 'users.first_name asc' ]
+			orderBy: [ 'users.username asc' ]
 		};
 		if (search) {
 			condition.conditions['like'] = {
 				first_name: search,
-				last_name: search
+				last_name: search,
+				email: search,
 			};
 		}
-		if (JSON.parse(filter)) {
-			const searchParameter = user_type === 2 ? Constants.BussinessSearch : Constants.UserSearch;
-			searchParameter.forEach((value) => {
-				if (Request.query.hasOwnProperty(value)) {
-					if (Request.query[value]) { 
-						condition.conditions[value] = Request.query[value];
-					}
-				}
-			});
-		}
-		if (JSON.parse(category_id) !== 0 && user_type === 2) {
-			condition.conditions['FIND_IN_SET'] = [ category_id, 'category' ];
-		}
-
-		if (user_id !== 0 && user_type === 1) {
+		if (user_id !== 0) {
 			condition.fields.push(
-				`(select count(id) from friends where user_id=${user_id} and friend_id=users.id and is_request=0) as is_friend`
+				`(select count(id) from friends where user_id=${user_id} and friend_id=users.id and is_request=0) as i_follow`
 			);
 			condition.fields.push(
 				`(select count(id) from friends where user_id=${user_id} and friend_id=users.id and is_request=1) as i_request`
@@ -355,40 +327,37 @@ class UserController extends ApiController {
 				`(select count(id) from friends where friend_id=${user_id} and user_id=users.id and is_request=1) as is_request`
 			);
 			condition.fields.push(
-				`(select count(id) from favorites_users where user_id=${user_id} and friend_id=users.id) as is_fav`
+				`(select count(id) from friends where friend_id=${user_id} and user_id=users.id and is_request=0) as is_follow`
 			);
-		} else if (user_id !== 0 && user_type === 2) {
-			condition.fields.push(
-				`(select count(id) from favorites_users where user_id=${user_id} and friend_id=users.id) as is_fav`
-			);
-			condition.fields.push('location');
-		}
+		} 
 		const user_info = await DB.find('users', 'all', condition);
-		const message = user_type === 1 ? lang[Request.lang].userList : lang[Request.lang].businessListing;
+		const message = 'user listing';
 		return {
 			message,
 			data: {
-				pagination: await super.Paginations('users', condition, offset, limit),
+				pagination: await super.Paginations('users', condition, page, limit),
 				result: app.addUrl(user_info, [ 'profile', 'cover_pic' ])
 			}
 		};
 	}
 	async userProfile(Request) {
 		const user_id = Request.query.user_id || Request.body.userInfo.id;
-		const loginId = Request.body.user_id;
+		const loginId = Request.body.user_id || 0;
 		const user_info = await super.userDetails(user_id);
-		if (user_info.profile.length > 0) {
-			user_info.profile = appURL + 'uploads/' + user_info.profile;
-		}
-		if (user_info.cover_pic.length > 0) {
-			user_info.cover_pic = appURL + 'uploads/' + user_info.cover_pic;
-		}
-		user_info.is_friend = 0;
+		const otherinfo = {
+			total_following: 0,
+			total_follower: 0,
+			total_posts: 0,
+		};
+		user_info.is_follow = 0;
 		user_info.i_request = 0;
 		user_info.is_request = 0;
-		user_info.is_fav = 0;
+		user_info.i_follow = 0;
+		const total_following = await DB.first(`select count(id) as total from friends where user_id=${user_id}  and is_request=0`);
+		const total_follower = await DB.first(`select count(id) as total from friends where friend_id=${user_id}  and is_request=0`);
+		const total_posts = await DB.first(`select count(id) as total from posts where user_id=${user_id}`);
 		if (user_id !== loginId) {
-			const is_friend = await DB.first(
+			const i_follow = await DB.first(
 				`select count(id) as total from friends where user_id=${loginId} and friend_id=${user_id} and is_request=0`
 			);
 			const i_request = await DB.first(
@@ -397,150 +366,32 @@ class UserController extends ApiController {
 			const is_request = await DB.first(
 				`select count(id) as total from friends where friend_id=${loginId} and user_id=${user_id} and is_request=1`
 			);
-			const is_fav = await DB.first(
-				`select count(id) as total from favorites_users where user_id=${loginId} and friend_id=${user_id}`
+			const is_follow = await DB.first(
+				`select count(id) as total from friends where friend_id=${loginId} and user_id=${user_id} and is_request=0`
 			);
-			user_info.is_friend = is_friend[0].total;
+			user_info.i_follow = i_follow[0].total;
 			user_info.i_request = i_request[0].total;
 			user_info.is_request = is_request[0].total;
-			user_info.is_fav = is_fav[0].total;
+			user_info.is_follow = is_follow[0].total;
 		}
-		const firendQuery = `select users.id,first_name,about_us, last_name, email, profile, cover_pic,state,user_type,
-      age,
-      sex,
-      marital_status,
-      speck_romanina,
-      zip,
-      website,
-      business_hours,
-      description,
-      phone_code,
-      category
-    from friends join users on (friends.friend_id = users.id) where is_request = 0 and user_id = ${user_id} order by friends.id desc limit 3`;
-		const friends = app.addUrl(await DB.first(firendQuery), [ 'profile', 'cover_pic' ]);
-		const total_friend = await DB.first(
-			`select count(friends.id) as total from friends join users on (friends.friend_id = users.id) where is_request = 0 and user_id = ${user_id} order by friends.id desc`
-		);
-		const users_pictures = app.addUrl(
-			await DB.first(`select * from users_pictures where user_id = ${user_id} order by id desc limit 10`),
-			'pictures'
-		);
-		const posts = app.addUrl(
+		otherinfo.total_following = total_following[0].total;
+		otherinfo.total_follower = total_follower[0].total;
+		otherinfo.total_posts = total_posts[0].total;
+		let posts = [];
+		if ((user_info.is_private === 1 && user_info.i_follow === 1) || user_info.is_private === 0) { 
+			posts = app.addUrl(
 			await DB.first(
-				`select *,(select count(id) from favorites_posts where post_id = posts.id and user_id = ${user_id}) as is_fav, (select count(id) from post_likes where post_id = posts.id and user_id = ${user_id}) as is_like from posts where user_id = ${user_id} order by id desc limit 10`
+				`select *, (select count(id) from post_likes where post_id = posts.id and user_id = ${user_id}) as is_like from posts where user_id = ${user_id} order by id desc limit 10`
 			),
 			'media'
-		);
+			);
+		}
 		return {
 			message: lang[Request.lang].userProfile,
 			data: {
 				user_info,
-				friends,
-				total_friend: total_friend[0].total,
-				users_pictures,
+				otherinfo,
 				posts
-			}
-		};
-	}
-	async doFavUser(Request) {
-		const required = {
-			user_id: Request.body.user_id,
-			friend_id: Request.body.friend_id
-		};
-		const requestData = await super.vaildation(required, {});
-		const postDetails = await DB.find('users', 'all', {
-			conditions: {
-				id: requestData.friend_id
-			}
-		});
-		if (postDetails.length === 0) throw new ApiError(lang[Request.lang].userNotFound, 404);
-		const likeDateils = await DB.find('favorites_users', 'all', {
-			conditions: {
-				user_id: requestData.user_id,
-				friend_id: requestData.friend_id
-			}
-		});
-		let message = '';
-		if (likeDateils.length > 0) {
-			await DB.first(`delete from favorites_users where id = ${likeDateils[0].id}`);
-			message = lang[Request.lang].userUnfav;
-		} else {
-			await DB.save('favorites_users', requestData);
-			message = lang[Request.lang].userFav;
-		}
-		return {
-			message,
-			data: []
-		};
-	}
-	async favUsers(Request) {
-		const { user_id } = Request.body;
-		let offset = Request.params.offset || 1;
-		const limit = Request.query.limit || 10;
-		const user_type = Request.query.user_type || 1;
-		const search = Request.query.search || '';
-		offset = (offset - 1) * limit;
-		const filter = Request.query.filter || false;
-		const condition = {
-			conditions: {
-				user_id,
-				user_type
-			},
-			join: [ 'users on users.id = favorites_users.friend_id' ],
-			fields: [
-				'users.id',
-				'first_name',
-				'last_name',
-				'status',
-				'email',
-				'phone',
-				'cover_pic',
-				'about_us',
-				'profile',
-				'state',
-				'age',
-				'sex',
-				'marital_status',
-				'speck_romanina',
-				'zip',
-				'website',
-				'business_hours',
-				'description',
-				'category',
-				'location',
-				'phone_code',
-				'city',
-				'user_type',
-				`(select count(id) from friends where user_id=${user_id} and friend_id=users.id and is_request=0) as is_friend`,
-				`(select count(id) from friends where user_id=${user_id} and friend_id=users.id and is_request=1) as i_request`,
-				`(select count(id) from friends where friend_id=${user_id} and user_id=users.id and is_request=1) as is_request`,
-				`(select count(id) from favorites_users where user_id=${user_id} and friend_id=users.id) as is_fav`
-			],
-			limit: [ offset, limit ],
-			orderBy: [ 'users.first_name desc' ]
-		};
-		if (search) {
-			condition.conditions['like'] = {
-				first_name: search,
-				last_name: search,
-			};
-		}
-		if (JSON.parse(filter)) {
-			const searchParameter =  Constants.UserSearch;
-			searchParameter.forEach((value) => {
-				if (Request.query.hasOwnProperty(value)) {
-					if (Request.query[value]) { 
-						condition.conditions[value] = Request.query[value];
-					}
-				}
-			});
-		}
-		const user_info = await DB.find('favorites_users', 'all', condition);
-		return {
-			message: lang[Request.lang].friendList,
-			data: {
-				pagination: await super.Paginations('favorites_users', condition, offset, limit),
-				result: app.addUrl(user_info, [ 'profile', 'cover_pic' ])
 			}
 		};
 	}
@@ -549,51 +400,32 @@ class UserController extends ApiController {
 			id: req.body.user_id
 		};
 		const non_required = {
-			first_name: req.body.first_name,
-			last_name: req.body.last_name,
+			name: req.body.name,
+			username: req.body.username,
 			about_us: req.body.about_us,
-			state: req.body.state,
-			age: req.body.age,
-			sex: req.body.sex,
-			marital_status: req.body.marital_status,
-			speck_romanina: req.body.speck_romanina,
-			zip: req.body.zip,
-			website: req.body.website,
-			business_hours: req.body.business_hours,
-			description: req.body.description,
-			category: req.body.category,
+			is_private: req.body.is_private,
 			location: req.body.location,
-			city: req.body.city,
-			phone_code: req.body.phone_code
+			latitude: req.body.latitude,
+			longitude: req.body.longitude
 		};
 		const request_data = await super.vaildation(required, non_required);
+		if (request_data.username) { 
+			const checkUserName = await DB.first(`select username from users where username= '${request_data.username}' and id != ${request_data.id} limit 1`);
+			if (checkUserName.length > 0) { 
+				throw new ApiError(`this username already register please choice anotherone`, 422);
+			}
+		}
+		
 		if (req.files && req.files.profile) {
 			request_data.profile = await app.upload_pic_with_await(req.files.profile);
-			DB.save('users_pictures', {
-				user_id: request_data.id,
-				pictures: request_data.profile,
-				type: 1
-			});
 		}
 		if (req.files && req.files.cover_pic) {
 			request_data.cover_pic = await app.upload_pic_with_await(req.files.cover_pic);
-			DB.save('users_pictures', {
-				user_id: request_data.id,
-				pictures: request_data.cover_pic,
-				type: 2
-			});
 		}
 		await DB.save('users', request_data);
-		const usersinfo = await super.userDetails(request_data.id);
-		if (usersinfo.profile.length > 0) {
-			usersinfo.profile = appURL + 'uploads/' + usersinfo.profile;
-		}
-		if (usersinfo.cover_pic.length > 0) {
-			usersinfo.cover_pic = appURL + 'uploads/' + usersinfo.cover_pic;
-		}
 		return {
 			message: lang[req.lang].profileUpdate,
-			data: usersinfo
+			data: await super.userDetails(request_data.id)
 		};
 	}
 
@@ -618,16 +450,12 @@ class UserController extends ApiController {
 			subject: 'User Account Verification',
 			template: 'user_signup',
 			data: {
-				first_name: request_data.first_name,
-				last_name: request_data.last_name,
+				first_name: request_data.username,
+				last_name: request_data.username,
 				url: appURL + 'users/verify/' + request_data.authorization_key
 			}
 		};
 		try {
-			app.sendSMS({
-				to: request_data.phone_code + request_data.phone,
-				message: `${request_data.otp} ${lang[request_data.lang].OTP}`
-			});
 			app.send_mail(mail);
 			return true;
 		} catch (error) {

@@ -2,15 +2,14 @@ const missingRoutes = {
     'app_info':"GET",
     'forgot_password':"POST",
     'user/login':"POST",
-    'user':"POST",
+    'signup/email': "POST",
+    'signup/phone': "POST",
+    'signup/soical':"POST",
     'posts':"GET",
-    'user/picture':"GET",
-    'jobs':"GET",
-    'category/job':"GET",
+    'user/profile': "GET",
+    'category' : 'GET',
     'user/listing':"GET",
     'posts/comment':"GET",
-    'business/category': "GET",
-    'ads':"GET",
 };
 const AuthSkip = (Req, res, next) => {
     res.auth = true;

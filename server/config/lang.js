@@ -60,7 +60,7 @@ module.exports = {
     userList:"users Listing",
     businessListing: "Business listing",
     NotificationListing: "Notification listing",
-    bussinessCatgeory:"Bussiness Catgegory Listing",
+    bussinessCatgeory:"Catgegory Listing",
     OTP:"is your one time password to verify account on ROU.It is vaild for 30 minutes.Do not share your OTP with anyone"
  },
  es:{

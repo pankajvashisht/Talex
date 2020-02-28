@@ -11,9 +11,10 @@ module.exports = {
 		const required = {
 			title: Request.body.title,
 			user_id: Request.body.user_id,
-			description: Request.body.description,
-			media_type: Request.body.media_type,
-			post_type: Request.body.post_type, // 1-> user post 2-> bussions post
+			description: Request.body.description || '',
+			category_id: Request.body.category_id,
+			audio_name: Request.body.audio_name,
+			media_type: Request.body.media_type || 0,
 			locations: Request.body.locations || '',
 			latitude: Request.body.latitude || 0,
 			longitude: Request.body.longitude || 0,
@@ -271,7 +272,7 @@ module.exports = {
 				'users.cover_pic',
 				'users.about_us',
 				'users.profile',
-				'users.user_type',
+				'users.is_private',
 				'notifications.*'
 			],
 			limit: [ offset, limit ],
@@ -346,7 +347,7 @@ module.exports = {
 		}
 		if (friend_post && !user_post) {
 			condition.join.push(
-				` friends on (posts.user_id=friends.user_id and friends.friend_id=${Request.body
+				` friends on (posts.user_id=friends.friend_id and friends.user_id=${Request.body
 					.user_id} and friends.is_request=0)`
 			);
 		}
@@ -355,10 +356,6 @@ module.exports = {
 				`(select count(id) from post_likes where post_id = posts.id and user_id = ${Request.body
 					.user_id}) as is_like`
 			);
-			condition.fields.push(
-				`(select count(id) from favorites_posts where post_id = posts.id and user_id = ${Request.body
-					.user_id}) as is_fav`
-			);
 		}
 		const result = await DB.find('posts', 'all', condition);
 		return {
@@ -366,23 +363,6 @@ module.exports = {
 			data: {
 				pagination: await apis.Paginations('posts', condition, offset, limit),
 				result: app.addUrl(result, [ 'profile', 'cover_pic', 'media' ])
-			}
-		};
-	},
-	getAds: async (Request) => {
-		let offset = Request.params.offset || 1;
-		const limit = Request.query.limit || 10;
-		offset = (offset - 1) * limit;
-		const condition = {
-			limit: [ offset, limit ],
-			orderBy: [ 'id desc' ]
-		};
-		const result = await DB.find('ads', 'all', condition);
-		return {
-			message: lang[Request.lang].getPost,
-			data: {
-				pagination: await apis.Paginations('ads', condition, offset, limit),
-				result: app.addUrl(result, 'image')
 			}
 		};
 	},
@@ -402,10 +382,9 @@ module.exports = {
 				'users.cover_pic',
 				'users.about_us',
 				'users.profile',
-				'users.user_type',
+				'users.is_private',
 				'posts.*',
 				`(select count(id) from post_likes where post_id = posts.id and user_id = ${user_id}) as is_like`,
-				`(select count(id) from favorites_posts where post_id = posts.id and user_id = ${user_id}) as is_fav`
 			]
 		};
 		const result = await DB.find('posts', 'all', condition);
@@ -417,42 +396,7 @@ module.exports = {
 			data: app.addUrl(result, [ 'profile', 'cover_pic', 'media' ])[0]
 		};
 	},
-	getFavPosts: async (Request) => {
-		let offset = Request.params.offset || 1;
-		const limit = Request.query.limit || 10;
-		const user_id = Request.body.user_id;
-		offset = (offset - 1) * limit;
-		const condition = {
-			join: [
-				`users on (users.id = posts.user_id)`,
-				`favorites_posts on (favorites_posts.user_id =${user_id} and favorites_posts.post_id=posts.id)`
-			],
-			fields: [
-				'users.first_name',
-				'users.last_name',
-				'users.status',
-				'users.email',
-				'users.phone',
-				'users.cover_pic',
-				'users.about_us',
-				'users.profile',
-				'users.user_type',
-				'posts.*',
-				`(select count(id) from post_likes where post_id = posts.id and user_id = ${user_id}) as is_like`,
-				`(select count(id) from favorites_posts where post_id = posts.id and user_id = ${user_id}) as is_fav`
-			],
-			limit: [ offset, limit ],
-			orderBy: [ 'id desc' ]
-		};
-		const result = await DB.find('posts', 'all', condition);
-		return {
-			message: lang[Request.lang].getFavPost,
-			data: {
-				pagination: await apis.Paginations('posts', condition, offset, limit),
-				result: app.addUrl(result, [ 'profile', 'cover_pic', 'media' ])
-			}
-		};
-	}
+	
 };
 
 const saveNotification = async (notification) => {
