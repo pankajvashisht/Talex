@@ -240,8 +240,8 @@ module.exports = {
 			},
 			join: ['users on (users.id = post_comments.user_id)'],
 			fields: [
-				'users.first_name',
-				'users.last_name',
+				'users.name',
+				'users.username',
 				'users.status',
 				'users.email',
 				'users.phone',
@@ -278,8 +278,8 @@ module.exports = {
 			},
 			join: ['users on (users.id = notifications.friend_id)'],
 			fields: [
-				'users.first_name',
-				'users.last_name',
+				'users.name',
+				'users.username',
 				'users.status',
 				'users.email',
 				'users.phone',
@@ -339,8 +339,8 @@ module.exports = {
 		const condition = {
 			join: ['users on (users.id = posts.user_id)'],
 			fields: [
-				'users.first_name',
-				'users.last_name',
+				'users.name',
+				'users.username',
 				'users.status',
 				'users.email',
 				'users.phone',
@@ -392,8 +392,8 @@ module.exports = {
 			},
 			join: ['users on (users.id = posts.user_id)'],
 			fields: [
-				'users.first_name',
-				'users.last_name',
+				'users.name',
+				'users.username',
 				'users.status',
 				'users.email',
 				'users.phone',

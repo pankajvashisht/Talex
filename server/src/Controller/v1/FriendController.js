@@ -7,7 +7,7 @@ let apis = new ApiController();
 let DB = new Db();
 
 module.exports = {
-	follow: async (Request) => {
+	follow: async Request => {
 		const required = {
 			friend_id: Request.body.friend_id,
 			user_id: Request.body.user_id
@@ -17,8 +17,8 @@ module.exports = {
 			conditions: {
 				'users.id': requestData.friend_id
 			},
-			join: [ 'user_auths on users.id = user_auths.user_id' ],
-			fields: [ 'users.id as user_id', 'is_private' ]
+			join: ['user_auths on users.id = user_auths.user_id'],
+			fields: ['users.id as user_id', 'is_private']
 		});
 		if (!user_info) throw new ApiError(lang[Request.lang].userNotFound, 404);
 		if (user_info.is_private) requestData.is_request = 1;
@@ -43,7 +43,7 @@ module.exports = {
 			data: []
 		};
 	},
-	rejectRequest: async (Request) => {
+	rejectRequest: async Request => {
 		const { friend_id } = Request.body;
 		const checkPost = await DB.find('friends', 'first', {
 			conditions: {
@@ -61,7 +61,7 @@ module.exports = {
 			data: []
 		};
 	},
-	unFriend: async (Request) => {
+	unFriend: async Request => {
 		const { friend_id } = Request.body;
 		const user_id = Request.body.user_id;
 		const checkPost = await DB.find('friends', 'first', {
@@ -82,7 +82,7 @@ module.exports = {
 			data: []
 		};
 	},
-	acceptRequest: async (Request) => {
+	acceptRequest: async Request => {
 		const required = {
 			friend_id: Request.body.friend_id,
 			user_id: Request.body.user_id
@@ -93,8 +93,8 @@ module.exports = {
 			conditions: {
 				'users.id': requestData.friend_id
 			},
-			join: [ 'user_auths on users.id = user_auths.user_id' ],
-			fields: [ 'users.id as user_id' ]
+			join: ['user_auths on users.id = user_auths.user_id'],
+			fields: ['users.id as user_id']
 		});
 		if (!user_info) throw new ApiError(lang[Request.lang].userNotFound, 404);
 		const checkPost = await DB.find('friends', 'first', {
@@ -109,12 +109,12 @@ module.exports = {
 		}
 		checkPost.is_request = 0;
 		await DB.save('friends', checkPost);
-		const { first_name, last_name } = Request.body.userInfo;
+		const { name, username } = Request.body.userInfo;
 		DB.save('notifications', {
 			user_id: requestData.friend_id,
 			friend_id: requestData.user_id,
 			type: 3,
-			text: `${first_name} ${last_name} Accept your request`
+			text: `${name} ${username} Accept your request`
 		});
 		sendPush(user_info, 'Request Accepted', 6);
 		return {
@@ -122,7 +122,7 @@ module.exports = {
 			data: []
 		};
 	},
-	friendRequestList: async (Request) => {
+	friendRequestList: async Request => {
 		const { user_id } = Request.body;
 		let offset = Request.params.offset || 1;
 		const limit = Request.query.limit || 10;
@@ -134,11 +134,11 @@ module.exports = {
 				friend_id: user_id,
 				is_request: 1
 			},
-			join: [ 'users on users.id = friends.user_id' ],
+			join: ['users on users.id = friends.user_id'],
 			fields: [
 				'users.id',
-				'first_name',
-				'last_name',
+				'name',
+				'username',
 				'status',
 				'email',
 				'phone',
@@ -150,18 +150,18 @@ module.exports = {
 				`(select count(id) from friends where friend_id=${user_id} and user_id=users.id and is_request=1) as is_request`,
 				`(select count(id) from friends where friend_id=${user_id} and user_id=users.id) as is_follow`
 			],
-			limit: [ offset, limit ],
-			orderBy: [ 'friends.id desc' ]
+			limit: [offset, limit],
+			orderBy: ['friends.id desc']
 		};
 		if (search) {
 			condition.conditions['like'] = {
-				first_name: search,
-				last_name: search
+				name: search,
+				username: search
 			};
 		}
 		if (JSON.parse(filter)) {
 			const searchParameter = Constants.UserSearch;
-			searchParameter.forEach((value) => {
+			searchParameter.forEach(value => {
 				if (Request.query.hasOwnProperty(value)) {
 					if (Request.query[value]) {
 						condition.conditions[value] = Request.query[value];
@@ -174,11 +174,11 @@ module.exports = {
 			message: lang[Request.lang].requestList,
 			data: {
 				pagination: await apis.Paginations('friends', condition, offset, limit),
-				result: app.addUrl(user_info, [ 'profile', 'cover_pic' ])
+				result: app.addUrl(user_info, ['profile', 'cover_pic'])
 			}
 		};
 	},
-	friends: async (Request) => {
+	friends: async Request => {
 		const { user_id } = Request.body;
 		let offset = Request.params.offset || 1;
 		const limit = Request.query.limit || 10;
@@ -190,11 +190,11 @@ module.exports = {
 				friend_id: user_id,
 				is_request: 0
 			},
-			join: [ 'users on users.id = friends.user_id' ],
+			join: ['users on users.id = friends.user_id'],
 			fields: [
 				'users.id',
-				'first_name',
-				'last_name',
+				'name',
+				'username',
 				'status',
 				'email',
 				'phone',
@@ -207,18 +207,18 @@ module.exports = {
 				`(select count(id) from friends where friend_id=${user_id} and user_id=users.id and is_request=1) as is_request`,
 				`(select count(id) from friends where friend_id=${user_id} and user_id=users.id) as is_follow`
 			],
-			limit: [ offset, limit ],
-			orderBy: [ 'users.first_name desc' ]
+			limit: [offset, limit],
+			orderBy: ['users.name desc']
 		};
 		if (search) {
 			condition.conditions['like'] = {
-				first_name: search,
-				last_name: search
+				name: search,
+				username: search
 			};
 		}
 		if (JSON.parse(filter)) {
 			const searchParameter = Constants.UserSearch;
-			searchParameter.forEach((value) => {
+			searchParameter.forEach(value => {
 				if (Request.query.hasOwnProperty(value)) {
 					if (Request.query[value]) {
 						condition.conditions[value] = Request.query[value];
@@ -231,7 +231,7 @@ module.exports = {
 			message: lang[Request.lang].friendList,
 			data: {
 				pagination: await apis.Paginations('friends', condition, offset, limit),
-				result: app.addUrl(user_info, [ 'profile', 'cover_pic' ])
+				result: app.addUrl(user_info, ['profile', 'cover_pic'])
 			}
 		};
 	}
