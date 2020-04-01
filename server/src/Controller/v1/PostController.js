@@ -40,7 +40,7 @@ module.exports = {
 		};
 	},
 	deletePost: async Request => {
-		const { post_id } = Request.query;
+		const { post_id } = Request.params;
 		const checkPost = await DB.find('posts', 'first', {
 			conditions: {
 				id: post_id,
