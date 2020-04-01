@@ -7,7 +7,7 @@ const apis = new ApiController();
 const DB = new Db();
 
 module.exports = {
-	addJob: async (Request) => {
+	addJob: async Request => {
 		const required = {
 			user_id: Request.body.user_id,
 			job_category_id: Request.body.job_category_id,
@@ -44,10 +44,14 @@ module.exports = {
 		});
 		if (!category) throw new ApiError(lang[Request.lang].categoryNotFound, 404);
 		if (Request.files && Request.files.picture) {
-			requestData.picture = await app.upload_pic_with_await(Request.files.picture);
+			requestData.picture = await app.upload_pic_with_await(
+				Request.files.picture
+			);
 		}
 		if (Request.files && Request.files.cover_pic) {
-			requestData.cover_pic = await app.upload_pic_with_await(Request.files.cover_pic);
+			requestData.cover_pic = await app.upload_pic_with_await(
+				Request.files.cover_pic
+			);
 		}
 		requestData.id = await DB.save('jobs', requestData);
 		if (requestData.picture) {
@@ -61,7 +65,7 @@ module.exports = {
 			data: requestData
 		};
 	},
-	dofav: async (Request) => {
+	dofav: async Request => {
 		const required = {
 			user_id: Request.body.user_id,
 			job_id: Request.body.job_id
@@ -81,7 +85,9 @@ module.exports = {
 		});
 		let message = '';
 		if (likeDateils.length > 0) {
-			await DB.first(`delete from favorites_jobs where id = ${likeDateils[0].id}`);
+			await DB.first(
+				`delete from favorites_jobs where id = ${likeDateils[0].id}`
+			);
 			message = lang[Request.lang].jobUnfav;
 		} else {
 			await DB.save('favorites_jobs', requestData);
@@ -92,7 +98,7 @@ module.exports = {
 			data: []
 		};
 	},
-	favJobs: async (Request) => {
+	favJobs: async Request => {
 		let offset = Request.params.offset || 1;
 		const limit = Request.query.limit || 10;
 		const user_id = Request.body.user_id;
@@ -111,23 +117,27 @@ module.exports = {
 				'users.cover_pic as user_cover_pic',
 				'users.about_us',
 				'users.profile',
-				'users.user_type',
 				'jobs.*',
 				`(select count(id) from favorites_jobs where job_id = jobs.id and user_id = ${user_id}) as is_fav`
 			],
-			limit: [ offset, limit ],
-			orderBy: [ 'id desc' ]
+			limit: [offset, limit],
+			orderBy: ['id desc']
 		};
 		const result = await DB.find('jobs', 'all', condition);
 		return {
 			message: lang[Request.lang].getFavPost,
 			data: {
 				pagination: await apis.Paginations('jobs', condition, offset, limit),
-				result: app.addUrl(result, [ 'profile', 'cover_pic', 'user_cover_pic', 'picture' ])
+				result: app.addUrl(result, [
+					'profile',
+					'cover_pic',
+					'user_cover_pic',
+					'picture'
+				])
 			}
 		};
 	},
-	allJobs: async (Request) => {
+	allJobs: async Request => {
 		let offset = Request.params.offset || 1;
 		const limit = Request.query.limit || 10;
 		const user_id = Request.body.user_id || 0;
@@ -136,12 +146,13 @@ module.exports = {
 		const search = Request.query.search || '';
 		const filter = Request.query.filter || false;
 		offset = (offset - 1) * limit;
-		if (user_id === 0 && is_my) throw new ApiError(lang[Request.lang].needLogin, 401);
+		if (user_id === 0 && is_my)
+			throw new ApiError(lang[Request.lang].needLogin, 401);
 		const condition = {
 			conditions: {
 				'jobs.status': 1
 			},
-			join: [ `users on (users.id = jobs.user_id)` ],
+			join: [`users on (users.id = jobs.user_id)`],
 			fields: [
 				'users.first_name',
 				'users.last_name',
@@ -151,12 +162,11 @@ module.exports = {
 				'users.cover_pic as user_cover_pic',
 				'users.about_us',
 				'users.profile',
-				'users.user_type',
 				'jobs.*',
 				`0 as is_fav`
 			],
-			limit: [ offset, limit ],
-			orderBy: [ 'id desc' ]
+			limit: [offset, limit],
+			orderBy: ['id desc']
 		};
 		if (search) {
 			condition.conditions['like'] = {
@@ -164,18 +174,19 @@ module.exports = {
 				'jobs.city': search,
 				'jobs.state': search
 			};
-    }
+		}
 		if (JSON.parse(filter)) {
 			const searchParameter = Constants.JobSearch;
-				searchParameter.forEach((value) => {
-					if (Request.query.hasOwnProperty(value)) {
-						if (Request.query[value]) { 
-							condition.conditions[value] = Request.query[value];
-						}
+			searchParameter.forEach(value => {
+				if (Request.query.hasOwnProperty(value)) {
+					if (Request.query[value]) {
+						condition.conditions[value] = Request.query[value];
 					}
+				}
 			});
-    	}
-		if (JSON.parse(category_id) !== 0) condition.conditions['job_category_id'] = category_id;
+		}
+		if (JSON.parse(category_id) !== 0)
+			condition.conditions['job_category_id'] = category_id;
 		if (user_id !== 0) {
 			condition.fields.push(
 				`(select count(id) from favorites_jobs where job_id = jobs.id and user_id = ${user_id}) as is_fav`
@@ -189,20 +200,25 @@ module.exports = {
 			message: lang[Request.lang].getJobs,
 			data: {
 				pagination: await apis.Paginations('jobs', condition, offset, limit),
-				result: app.addUrl(result, [ 'profile', 'cover_pic', 'user_cover_pic', 'picture' ])
+				result: app.addUrl(result, [
+					'profile',
+					'cover_pic',
+					'user_cover_pic',
+					'picture'
+				])
 			}
 		};
 	},
-	jobCategory: async (Request) => {
+	jobCategory: async Request => {
 		const category = await DB.find('job_categories', 'all', {
-			order: [ 'id desc' ]
+			order: ['id desc']
 		});
 		return {
 			message: lang[Request.lang].categoryList,
 			data: category
 		};
 	},
-	deleteJob: async (Request) => {
+	deleteJob: async Request => {
 		const { job_id } = Request.body;
 		const checkPost = await DB.find('jobs', 'first', {
 			conditions: {

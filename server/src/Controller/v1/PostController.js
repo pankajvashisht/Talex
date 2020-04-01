@@ -248,7 +248,6 @@ module.exports = {
 				'users.cover_pic',
 				'users.about_us',
 				'users.profile',
-				'users.user_type',
 				'post_comments.*'
 			],
 			limit: [offset, requestData.limit],
@@ -347,7 +346,6 @@ module.exports = {
 				'users.cover_pic',
 				'users.about_us',
 				'users.profile',
-				'users.user_type',
 				'posts.*',
 				'0 as is_like',
 				'0 as is_fav'
