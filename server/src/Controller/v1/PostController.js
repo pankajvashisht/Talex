@@ -7,13 +7,14 @@ let apis = new ApiController();
 let DB = new Db();
 
 module.exports = {
-	addPost: async (Request) => {
+	addPost: async Request => {
 		const required = {
 			title: Request.body.title,
 			user_id: Request.body.user_id,
 			description: Request.body.description || '',
 			category_id: Request.body.category_id,
-			audio_name: Request.body.audio_name,
+			audio_name: Request.body.audio_name || 'no-audio',
+			media: Request.body.media,
 			media_type: Request.body.media_type || 0,
 			locations: Request.body.locations || '',
 			latitude: Request.body.latitude || 0,
@@ -38,7 +39,7 @@ module.exports = {
 			data: requestData
 		};
 	},
-	deletePost: async (Request) => {
+	deletePost: async Request => {
 		const { post_id } = Request.query;
 		const checkPost = await DB.find('posts', 'first', {
 			conditions: {
@@ -56,7 +57,7 @@ module.exports = {
 		};
 	},
 
-	likePost: async (Request) => {
+	likePost: async Request => {
 		const required = {
 			user_id: Request.body.user_id,
 			post_id: Request.body.post_id
@@ -67,7 +68,8 @@ module.exports = {
 				id: requestData.post_id
 			}
 		});
-		if (postDetails.length === 0) throw new ApiError(lang[Request.lang].wrongPost, 422);
+		if (postDetails.length === 0)
+			throw new ApiError(lang[Request.lang].wrongPost, 422);
 		const likeDateils = await DB.find('post_likes', 'all', {
 			conditions: {
 				user_id: requestData.user_id,
@@ -99,7 +101,7 @@ module.exports = {
 			data: []
 		};
 	},
-	favPost: async (Request) => {
+	favPost: async Request => {
 		const required = {
 			user_id: Request.body.user_id,
 			post_id: Request.body.post_id
@@ -110,7 +112,8 @@ module.exports = {
 				id: requestData.post_id
 			}
 		});
-		if (postDetails.length === 0) throw new ApiError(lang[Request.lang].wrongPost, 422);
+		if (postDetails.length === 0)
+			throw new ApiError(lang[Request.lang].wrongPost, 422);
 		const likeDateils = await DB.find('favorites_posts', 'all', {
 			conditions: {
 				user_id: requestData.user_id,
@@ -119,7 +122,9 @@ module.exports = {
 		});
 		let message = '';
 		if (likeDateils.length > 0) {
-			await DB.first(`delete from favorites_posts where id = ${likeDateils[0].id}`);
+			await DB.first(
+				`delete from favorites_posts where id = ${likeDateils[0].id}`
+			);
 			message = lang[Request.lang].postUnfav;
 		} else {
 			await DB.save('favorites_posts', requestData);
@@ -130,7 +135,7 @@ module.exports = {
 			data: []
 		};
 	},
-	comment: async (Request) => {
+	comment: async Request => {
 		const required = {
 			user_id: Request.body.user_id,
 			post_id: Request.body.post_id,
@@ -145,14 +150,15 @@ module.exports = {
 				id: requestData.post_id
 			}
 		});
-		if (postDetails.length === 0) throw new ApiError(lang[Request.lang].wrongPost, 422);
+		if (postDetails.length === 0)
+			throw new ApiError(lang[Request.lang].wrongPost, 422);
 		requestData.id = await DB.save('post_comments', requestData);
 		//requestData.postDetails = postDetails[0];
 		requestData.userInfo = {
-			profile:''
+			profile: ''
 		};
 		const { profile } = Request.body.userInfo;
-		if (profile.length > 0) { 
+		if (profile.length > 0) {
 			requestData.userInfo.profile = appURL + 'uploads/' + profile;
 		}
 		const { first_name, last_name } = Request.body.userInfo;
@@ -170,7 +176,7 @@ module.exports = {
 			data: requestData
 		};
 	},
-	share: async (Request) => {
+	share: async Request => {
 		const required = {
 			user_id: Request.body.user_id,
 			post_id: Request.body.post_id
@@ -181,7 +187,8 @@ module.exports = {
 				id: requestData.post_id
 			}
 		});
-		if (postDetails.length === 0) throw new ApiError(lang[Request.lang].wrongPost, 422);
+		if (postDetails.length === 0)
+			throw new ApiError(lang[Request.lang].wrongPost, 422);
 		await DB.save('post_shares', requestData);
 		postDetails[0].total_shares += 1;
 		increareCount(postDetails[0]);
@@ -190,7 +197,7 @@ module.exports = {
 			data: []
 		};
 	},
-	deleteComment: async (Request) => {
+	deleteComment: async Request => {
 		const { comment_id } = Request.query;
 		const checkPost = await DB.find('post_comments', 'first', {
 			conditions: {
@@ -202,7 +209,9 @@ module.exports = {
 			throw new ApiError(lang[Request.lang].wrongPost, 422);
 		}
 		await DB.first(`delete from post_comments where id = ${comment_id}`);
-		const post = await DB.first(`select * from posts where id = ${checkPost.post_id}`);
+		const post = await DB.first(
+			`select * from posts where id = ${checkPost.post_id}`
+		);
 		post[0].total_comments -= 1;
 		increareCount(post[0]);
 		return {
@@ -210,7 +219,7 @@ module.exports = {
 			data: []
 		};
 	},
-	getComments: async (Request) => {
+	getComments: async Request => {
 		const required = {
 			user_id: Request.body.user_id,
 			post_id: Request.params.post_id,
@@ -229,7 +238,7 @@ module.exports = {
 			conditions: {
 				post_id: requestData.post_id
 			},
-			join: [ 'users on (users.id = post_comments.user_id)' ],
+			join: ['users on (users.id = post_comments.user_id)'],
 			fields: [
 				'users.first_name',
 				'users.last_name',
@@ -242,19 +251,24 @@ module.exports = {
 				'users.user_type',
 				'post_comments.*'
 			],
-			limit: [ offset, requestData.limit ],
-			orderBy: [ 'id desc' ]
+			limit: [offset, requestData.limit],
+			orderBy: ['id desc']
 		};
 		const result = await DB.find('post_comments', 'all', condition);
 		return {
 			message: lang[Request.lang].commentList,
 			data: {
-				pagination: await apis.Paginations('post_comments', condition, offset, requestData.limit),
-				result: app.addUrl(result, [ 'profile', 'cover_pic' ])
+				pagination: await apis.Paginations(
+					'post_comments',
+					condition,
+					offset,
+					requestData.limit
+				),
+				result: app.addUrl(result, ['profile', 'cover_pic'])
 			}
 		};
 	},
-	notifications: async (Request) => {
+	notifications: async Request => {
 		const { user_id } = Request.body;
 		let offset = Request.params.offset || 1;
 		const limit = Request.query.limit || 10;
@@ -262,7 +276,7 @@ module.exports = {
 			conditions: {
 				user_id
 			},
-			join: [ 'users on (users.id = notifications.friend_id)' ],
+			join: ['users on (users.id = notifications.friend_id)'],
 			fields: [
 				'users.first_name',
 				'users.last_name',
@@ -275,23 +289,28 @@ module.exports = {
 				'users.is_private',
 				'notifications.*'
 			],
-			limit: [ offset, limit ],
-			orderBy: [ 'notifications.id desc' ]
+			limit: [offset, limit],
+			orderBy: ['notifications.id desc']
 		};
 		const notification = await DB.find('notifications', 'all', condition);
 		return {
 			message: lang[Request.lang].NotificationListing,
 			data: {
-				pagination: await apis.Paginations('notifications', condition, offset, limit),
-				result: app.addUrl(notification, [ 'profile', 'cover_pic' ])
+				pagination: await apis.Paginations(
+					'notifications',
+					condition,
+					offset,
+					limit
+				),
+				result: app.addUrl(notification, ['profile', 'cover_pic'])
 			}
 		};
 	},
-	reportPost: async (Request) => { 
+	reportPost: async Request => {
 		const required = {
 			user_id: Request.body.user_id,
 			post_id: Request.body.post_id,
-			comment: Request.body.comment,
+			comment: Request.body.comment
 		};
 		const requestData = await apis.vaildation(required, {});
 		const postDetails = await DB.find('posts', 'first', {
@@ -299,14 +318,15 @@ module.exports = {
 				id: requestData.post_id
 			}
 		});
-		if (postDetails.length === 0) throw new ApiError(lang[Request.lang].wrongPost, 422);
+		if (postDetails.length === 0)
+			throw new ApiError(lang[Request.lang].wrongPost, 422);
 		await DB.save('report_posts', requestData);
 		return {
 			message: lang[Request.lang].postCreated,
 			data: []
 		};
 	},
-	getPosts: async (Request) => {
+	getPosts: async Request => {
 		let offset = Request.params.offset || 1;
 		const limit = Request.query.limit || 10;
 		const friend_post = Request.query.friend_post && Request.body.user_id;
@@ -317,7 +337,7 @@ module.exports = {
 			throw new ApiError(lang[Request.lang].needLogin, 401);
 		}
 		const condition = {
-			join: [ 'users on (users.id = posts.user_id)' ],
+			join: ['users on (users.id = posts.user_id)'],
 			fields: [
 				'users.first_name',
 				'users.last_name',
@@ -332,8 +352,8 @@ module.exports = {
 				'0 as is_like',
 				'0 as is_fav'
 			],
-			limit: [ offset, limit ],
-			orderBy: [ 'id desc' ]
+			limit: [offset, limit],
+			orderBy: ['id desc']
 		};
 		if (user_post) {
 			condition.conditions = {
@@ -347,14 +367,12 @@ module.exports = {
 		}
 		if (friend_post && !user_post) {
 			condition.join.push(
-				` friends on (posts.user_id=friends.friend_id and friends.user_id=${Request.body
-					.user_id} and friends.is_request=0)`
+				` friends on (posts.user_id=friends.friend_id and friends.user_id=${Request.body.user_id} and friends.is_request=0)`
 			);
 		}
 		if (Request.body.hasOwnProperty('user_id')) {
 			condition.fields.push(
-				`(select count(id) from post_likes where post_id = posts.id and user_id = ${Request.body
-					.user_id}) as is_like`
+				`(select count(id) from post_likes where post_id = posts.id and user_id = ${Request.body.user_id}) as is_like`
 			);
 		}
 		const result = await DB.find('posts', 'all', condition);
@@ -362,17 +380,17 @@ module.exports = {
 			message: lang[Request.lang].getPost,
 			data: {
 				pagination: await apis.Paginations('posts', condition, offset, limit),
-				result: app.addUrl(result, [ 'profile', 'cover_pic', 'media' ])
+				result: app.addUrl(result, ['profile', 'cover_pic', 'media'])
 			}
 		};
 	},
-	postDetails: async (Request) => {
+	postDetails: async Request => {
 		const user_id = Request.body.user_id;
 		const condition = {
 			conditions: {
 				'posts.id': Request.params.post_id
 			},
-			join: [ 'users on (users.id = posts.user_id)' ],
+			join: ['users on (users.id = posts.user_id)'],
 			fields: [
 				'users.first_name',
 				'users.last_name',
@@ -384,7 +402,7 @@ module.exports = {
 				'users.profile',
 				'users.is_private',
 				'posts.*',
-				`(select count(id) from post_likes where post_id = posts.id and user_id = ${user_id}) as is_like`,
+				`(select count(id) from post_likes where post_id = posts.id and user_id = ${user_id}) as is_like`
 			]
 		};
 		const result = await DB.find('posts', 'all', condition);
@@ -393,25 +411,24 @@ module.exports = {
 		}
 		return {
 			message: lang[Request.lang].getPost,
-			data: app.addUrl(result, [ 'profile', 'cover_pic', 'media' ])[0]
+			data: app.addUrl(result, ['profile', 'cover_pic', 'media'])[0]
 		};
-	},
-	
-};
-
-const saveNotification = async (notification) => {
-	if (notification.user_id !== notification.friend_id) {
-		DB.save('notifications', notification);
-		notification.notification_code = notification.type;
-    const pushObject = {
-      message: notification.text,
-      notification_code: notification.type,
-      body: notification
-    };
-    apis.sendPush(pushObject, notification.user_id);
 	}
 };
 
-const increareCount = async (posts) => {
+const saveNotification = async notification => {
+	if (notification.user_id !== notification.friend_id) {
+		DB.save('notifications', notification);
+		notification.notification_code = notification.type;
+		const pushObject = {
+			message: notification.text,
+			notification_code: notification.type,
+			body: notification
+		};
+		apis.sendPush(pushObject, notification.user_id);
+	}
+};
+
+const increareCount = async posts => {
 	DB.save('posts', posts);
 };
