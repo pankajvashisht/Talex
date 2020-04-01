@@ -9,14 +9,13 @@ let DB = new Db();
 module.exports = {
 	addPost: async Request => {
 		const required = {
-			title: Request.body.title,
 			user_id: Request.body.user_id,
 			description: Request.body.description || '',
 			category_id: Request.body.category_id,
 			audio_name: Request.body.audio_name || 'no-audio',
-			media: Request.body.media,
+			video_url: Request.body.video_url,
+			video_thumb: Request.body.video_thumb,
 			media_type: Request.body.media_type || 0,
-			locations: Request.body.locations || '',
 			latitude: Request.body.latitude || 0,
 			longitude: Request.body.longitude || 0,
 			id: Request.body.id || 0,
@@ -25,15 +24,16 @@ module.exports = {
 			total_shares: 0,
 			is_like: 0
 		};
-		const requestData = await apis.vaildation(required, {});
+		const norRequired = {
+			title: Request.body.title,
+			locations: Request.body.locations
+		};
+		const requestData = await apis.vaildation(required, norRequired);
 		if (requestData.id === 0) delete requestData.id;
 		if (Request.files && Request.files.media) {
 			requestData.media = await app.upload_pic_with_await(Request.files.media);
 		}
 		requestData.id = await DB.save('posts', requestData);
-		if (requestData.media) {
-			requestData.media = appURL + 'uploads/' + requestData.media;
-		}
 		return {
 			message: lang[Request.lang].postCreated,
 			data: requestData
