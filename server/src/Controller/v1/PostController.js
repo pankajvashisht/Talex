@@ -336,9 +336,6 @@ module.exports = {
 			throw new ApiError(lang[Request.lang].needLogin, 401);
 		}
 		const condition = {
-			conditions: {
-				'users.is_private': 0
-			},
 			join: ['users on (users.id = posts.user_id)'],
 			fields: [
 				'users.name',
@@ -358,6 +355,11 @@ module.exports = {
 			limit: [offset, limit],
 			orderBy: ['id desc']
 		};
+		if (!user_id) {
+			condition.conditions = {
+				'users.is_private': 0
+			};
+		}
 		if (user_post) {
 			condition.conditions = {
 				user_id: user_id
