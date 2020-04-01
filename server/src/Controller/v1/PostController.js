@@ -378,7 +378,7 @@ module.exports = {
 			message: lang[Request.lang].getPost,
 			data: {
 				pagination: await apis.Paginations('posts', condition, offset, limit),
-				result: app.addUrl(result, ['profile', 'cover_pic', 'media'])
+				result: app.addUrl(result, ['profile', 'cover_pic'])
 			}
 		};
 	},
