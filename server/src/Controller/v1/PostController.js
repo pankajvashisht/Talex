@@ -336,6 +336,9 @@ module.exports = {
 			throw new ApiError(lang[Request.lang].needLogin, 401);
 		}
 		const condition = {
+			conditions: {
+				'users.is_private': 0
+			},
 			join: ['users on (users.id = posts.user_id)'],
 			fields: [
 				'users.name',
@@ -346,6 +349,8 @@ module.exports = {
 				'users.cover_pic',
 				'users.about_us',
 				'users.profile',
+				'users.is_private',
+				'users.verfiy_badge',
 				'posts.*',
 				'0 as is_like',
 				'0 as is_fav'
@@ -399,6 +404,7 @@ module.exports = {
 				'users.about_us',
 				'users.profile',
 				'users.is_private',
+				'users.verfiy_badge',
 				'posts.*',
 				`(select count(id) from post_likes where post_id = posts.id and user_id = ${user_id}) as is_like`
 			]
