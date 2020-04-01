@@ -201,7 +201,6 @@ module.exports = {
 				'cover_pic',
 				'about_us',
 				'profile',
-				'user_type',
 				`(select count(id) from friends where user_id=${user_id} and friend_id=users.id) as i_follow`,
 				`(select count(id) from friends where user_id=${user_id} and friend_id=users.id and is_request=1) as i_request`,
 				`(select count(id) from friends where friend_id=${user_id} and user_id=users.id and is_request=1) as is_request`,
