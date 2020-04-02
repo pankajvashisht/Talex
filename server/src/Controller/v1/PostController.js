@@ -63,13 +63,12 @@ module.exports = {
 			post_id: Request.body.post_id
 		};
 		const requestData = await apis.vaildation(required, {});
-		const postDetails = await DB.find('posts', 'all', {
+		const postDetails = await DB.find('posts', 'first', {
 			conditions: {
 				id: requestData.post_id
 			}
 		});
-		if (postDetails.length === 0)
-			throw new ApiError(lang[Request.lang].wrongPost, 422);
+		if (!postDetails) throw new ApiError(lang[Request.lang].wrongPost, 422);
 		const likeDateils = await DB.find('post_likes', 'all', {
 			conditions: {
 				user_id: requestData.user_id,
@@ -80,20 +79,20 @@ module.exports = {
 		if (likeDateils.length > 0) {
 			await DB.first(`delete from post_likes where id = ${likeDateils[0].id}`);
 			message = lang[Request.lang].postDiLike;
-			postDetails[0].total_likes -= 1;
-			increareCount(postDetails[0]);
+			postDetails.total_likes -= 1;
+			increareCount(postDetails);
 		} else {
 			await DB.save('post_likes', requestData);
 			message = lang[Request.lang].postLike;
-			const { first_name, last_name } = Request.body.userInfo;
-			postDetails[0].total_likes += 1;
-			increareCount(postDetails[0]);
+			const { username } = Request.body.userInfo;
+			postDetails.total_likes += 1;
+			increareCount(postDetails);
 			saveNotification({
 				friend_id: requestData.user_id,
-				user_id: postDetails[0].user_id,
+				user_id: postDetails.user_id,
 				post_id: requestData.post_id,
 				type: 1,
-				text: `${first_name} ${last_name} like your post`
+				text: `${username}  like your post`
 			});
 		}
 		return {
@@ -145,15 +144,14 @@ module.exports = {
 		};
 		const requestData = await apis.vaildation(required, {});
 		if (requestData.id === 0) delete requestData.id;
-		const postDetails = await DB.find('posts', 'all', {
+		const postDetails = await DB.find('posts', 'first', {
 			conditions: {
 				id: requestData.post_id
 			}
 		});
-		if (postDetails.length === 0)
-			throw new ApiError(lang[Request.lang].wrongPost, 422);
+		if (!postDetails) throw new ApiError(lang[Request.lang].wrongPost, 422);
 		requestData.id = await DB.save('post_comments', requestData);
-		//requestData.postDetails = postDetails[0];
+		requestData.postDetails = postDetails;
 		requestData.userInfo = {
 			profile: ''
 		};
@@ -161,15 +159,15 @@ module.exports = {
 		if (profile.length > 0) {
 			requestData.userInfo.profile = appURL + 'uploads/' + profile;
 		}
-		const { first_name, last_name } = Request.body.userInfo;
-		postDetails[0].total_comments += 1;
-		increareCount(postDetails[0]);
+		const { username } = Request.body.userInfo;
+		postDetails.total_comments += 1;
+		increareCount(postDetails);
 		saveNotification({
 			friend_id: requestData.user_id,
-			user_id: postDetails[0].user_id,
+			user_id: postDetails.user_id,
 			post_id: requestData.post_id,
 			type: 2,
-			text: `${first_name} ${last_name} comment on your post`
+			text: ` ${username} comment on your post`
 		});
 		return {
 			message: lang[Request.lang].commentAdd,
