@@ -11,7 +11,7 @@ const Apiresponse = require('../libary/ApiResponse');
 let user = new UserController();
 const chat = new ChatController();
 
-router.use([ Language, AuthSkip, UserAuth ]);
+router.use([Language, AuthSkip, UserAuth]);
 router.get('/', function(req, res) {
 	res.send(' APi workings ');
 });
@@ -35,14 +35,29 @@ router.post('/posts/report/', Apiresponse(PostController.reportPost));
 router.post('/follow', Apiresponse(FriendController.sendRequest));
 router.post('/Unfollow', Apiresponse(FriendController.sendRequest));
 router.get('/ads/:offset([0-9]+)?/:lang?', Apiresponse(PostController.getAds));
-router.delete('/request/reject/:lang?', Apiresponse(FriendController.rejectRequest));
+router.delete(
+	'/request/reject/:lang?',
+	Apiresponse(FriendController.rejectRequest)
+);
 router.delete('/friend/', Apiresponse(FriendController.unFriend));
 router.post('/request/accept/', Apiresponse(FriendController.acceptRequest));
-router.get('/follow/:offset([0-9]+)?/', Apiresponse(FriendController.friendRequestList));
-router.get('/followers/:offset([0-9]+)?/', Apiresponse(FriendController.friends));
-router.get('/notifications/:offset([0-9]+)?/', Apiresponse(PostController.notifications));
+router.get(
+	'/follow/:offset([0-9]+)?/',
+	Apiresponse(FriendController.friendRequestList)
+);
+router.get(
+	'/followers/:offset([0-9]+)?/',
+	Apiresponse(FriendController.friends)
+);
+router.get(
+	'/notifications/:offset([0-9]+)?/',
+	Apiresponse(PostController.notifications)
+);
 router.get('/chat/last/:lang?', Apiresponse(chat.lastChat));
-router.get('/posts/details/:post_id([0-9]+)/:lang?', Apiresponse(PostController.postDetails));
+router.get(
+	'/posts/details/:post_id([0-9]+)/:lang?',
+	Apiresponse(PostController.postDetails)
+);
 router
 	.route('/posts/:offset([0-9]+)?/:lang?')
 	.get(Apiresponse(PostController.getPosts))
@@ -53,6 +68,7 @@ router
 	.route('/posts/comment/:post_id([0-9]+)?/:offset([0-9]+)?/:lang?')
 	.get(Apiresponse(PostController.getComments))
 	.post(Apiresponse(PostController.comment))
+	.put(Apiresponse(PostController.comment))
 	.delete(Apiresponse(PostController.deleteComment));
 
 router
