@@ -17,7 +17,6 @@ module.exports = {
 			conditions: {
 				'users.id': requestData.friend_id
 			},
-			join: ['user_auths on users.id = user_auths.user_id'],
 			fields: ['users.id as user_id', 'is_private']
 		});
 		if (!user_info) throw new ApiError(lang[Request.lang].userNotFound, 404);
@@ -25,8 +24,7 @@ module.exports = {
 		const friendRequest = await DB.find('friends', 'first', {
 			conditions: {
 				user_id: requestData.user_id,
-				friend_id: requestData.friend_id,
-				is_request: 1
+				friend_id: requestData.friend_id
 			}
 		});
 		let message = '';
@@ -36,7 +34,9 @@ module.exports = {
 		} else {
 			await DB.save('friends', requestData);
 			sendPush(user_info, 'start following you', 5);
-			message = 'Follow successfully';
+			message = user_info.is_private
+				? 'Request send successfully'
+				: 'Follow successfully';
 		}
 		return {
 			message,
@@ -61,7 +61,7 @@ module.exports = {
 			data: []
 		};
 	},
-	unFriend: async Request => {
+	unFollow: async Request => {
 		const { friend_id } = Request.body;
 		const user_id = Request.body.user_id;
 		const checkPost = await DB.find('friends', 'first', {
@@ -75,7 +75,7 @@ module.exports = {
 			throw new ApiError(lang[Request.lang].wrongRequest, 422);
 		}
 		await DB.first(
-			`delete from friends where (user_id = ${friend_id} and friend_id = ${user_id}) or (user_id = ${user_id} and friend_id = ${friend_id})`
+			`delete from friends where user_id = ${user_id} and friend_id = ${friend_id}`
 		);
 		return {
 			message: lang[Request.lang].unFriend,
@@ -93,7 +93,6 @@ module.exports = {
 			conditions: {
 				'users.id': requestData.friend_id
 			},
-			join: ['user_auths on users.id = user_auths.user_id'],
 			fields: ['users.id as user_id']
 		});
 		if (!user_info) throw new ApiError(lang[Request.lang].userNotFound, 404);
@@ -109,12 +108,12 @@ module.exports = {
 		}
 		checkPost.is_request = 0;
 		await DB.save('friends', checkPost);
-		const { name, username } = Request.body.userInfo;
+		const { username } = Request.body.userInfo;
 		DB.save('notifications', {
 			user_id: requestData.friend_id,
 			friend_id: requestData.user_id,
 			type: 3,
-			text: `${name} ${username} Accept your request`
+			text: `${username} Accept your request`
 		});
 		sendPush(user_info, 'Request Accepted', 6);
 		return {
@@ -127,7 +126,6 @@ module.exports = {
 		let offset = Request.params.offset || 1;
 		const limit = Request.query.limit || 10;
 		const search = Request.query.search || '';
-		const filter = Request.query.filter || false;
 		offset = (offset - 1) * limit;
 		const condition = {
 			conditions: {
@@ -145,6 +143,8 @@ module.exports = {
 				'cover_pic',
 				'about_us',
 				'profile',
+				'is_private',
+				'verfiy_badge',
 				`(select count(id) from friends where user_id=${user_id} and friend_id=users.id) as i_follow`,
 				`(select count(id) from friends where user_id=${user_id} and friend_id=users.id and is_request=1) as i_request`,
 				`(select count(id) from friends where friend_id=${user_id} and user_id=users.id and is_request=1) as is_request`,
@@ -158,16 +158,6 @@ module.exports = {
 				name: search,
 				username: search
 			};
-		}
-		if (JSON.parse(filter)) {
-			const searchParameter = Constants.UserSearch;
-			searchParameter.forEach(value => {
-				if (Request.query.hasOwnProperty(value)) {
-					if (Request.query[value]) {
-						condition.conditions[value] = Request.query[value];
-					}
-				}
-			});
 		}
 		const user_info = await DB.find('friends', 'all', condition);
 		return {
@@ -201,6 +191,8 @@ module.exports = {
 				'cover_pic',
 				'about_us',
 				'profile',
+				'is_private',
+				'verfiy_badge',
 				`(select count(id) from friends where user_id=${user_id} and friend_id=users.id) as i_follow`,
 				`(select count(id) from friends where user_id=${user_id} and friend_id=users.id and is_request=1) as i_request`,
 				`(select count(id) from friends where friend_id=${user_id} and user_id=users.id and is_request=1) as is_request`,

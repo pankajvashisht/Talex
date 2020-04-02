@@ -32,9 +32,8 @@ router.post('/posts/like/', Apiresponse(PostController.likePost));
 router.post('/posts/dislike/', Apiresponse(PostController.likePost));
 router.post('/posts/share/', Apiresponse(PostController.share));
 router.post('/posts/report/', Apiresponse(PostController.reportPost));
-router.post('/follow', Apiresponse(FriendController.sendRequest));
-router.post('/Unfollow', Apiresponse(FriendController.sendRequest));
-router.get('/ads/:offset([0-9]+)?/:lang?', Apiresponse(PostController.getAds));
+router.post('/follow', Apiresponse(FriendController.follow));
+router.post('/Unfollow', Apiresponse(FriendController.unFollow));
 router.delete(
 	'/request/reject/:lang?',
 	Apiresponse(FriendController.rejectRequest)
