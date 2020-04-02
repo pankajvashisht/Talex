@@ -143,7 +143,18 @@ module.exports = {
 			comment_id: Request.body.comment_id || 0
 		};
 		const requestData = await apis.vaildation(required, {});
-		if (requestData.id === 0) delete requestData.id;
+		if (requestData.id === 0) {
+			delete requestData.id;
+		} else {
+			const commentDetails = await DB.find('post_comments', 'first', {
+				conditions: {
+					id: requestData.id,
+					user_id: requestData.user_id
+				}
+			});
+			if (!commentDetails) throw new ApiError('Invaild Comment id', 422);
+		}
+
 		const postDetails = await DB.find('posts', 'first', {
 			conditions: {
 				id: requestData.post_id
@@ -217,7 +228,7 @@ module.exports = {
 	},
 	getComments: async Request => {
 		const required = {
-			user_id: Request.body.user_id,
+			user_id: Request.body.user_id || 0,
 			post_id: Request.params.post_id,
 			offset: Request.params.offset || 1,
 			limit: Request.query.limit || 20
@@ -243,6 +254,9 @@ module.exports = {
 				'users.phone',
 				'users.cover_pic',
 				'users.about_us',
+				'users.profile',
+				'users.is_private',
+				'users.verfiy_badge',
 				'users.profile',
 				'post_comments.*'
 			],
@@ -282,6 +296,7 @@ module.exports = {
 				'users.about_us',
 				'users.profile',
 				'users.is_private',
+				'users.verfiy_badge',
 				'notifications.*'
 			],
 			limit: [offset, limit],
