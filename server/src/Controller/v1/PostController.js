@@ -137,7 +137,7 @@ module.exports = {
 	comment: async Request => {
 		const required = {
 			user_id: Request.body.user_id,
-			post_id: Request.body.post_id,
+			post_id: Request.params.post_id,
 			comment: Request.body.comment,
 			id: Request.body.id || 0,
 			comment_id: Request.body.comment_id || 0
@@ -152,9 +152,7 @@ module.exports = {
 		if (!postDetails) throw new ApiError(lang[Request.lang].wrongPost, 422);
 		requestData.id = await DB.save('post_comments', requestData);
 		requestData.postDetails = postDetails;
-		requestData.userInfo = {
-			profile: ''
-		};
+		requestData.userInfo = Request.body.userInfo;
 		const { profile } = Request.body.userInfo;
 		if (profile.length > 0) {
 			requestData.userInfo.profile = appURL + 'uploads/' + profile;
