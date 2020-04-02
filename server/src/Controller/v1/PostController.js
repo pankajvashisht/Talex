@@ -401,7 +401,7 @@ module.exports = {
 		};
 	},
 	postDetails: async Request => {
-		const user_id = Request.body.user_id;
+		const user_id = Request.body.user_id || 0;
 		const condition = {
 			conditions: {
 				'posts.id': Request.params.post_id
@@ -422,13 +422,19 @@ module.exports = {
 				`(select count(id) from post_likes where post_id = posts.id and user_id = ${user_id}) as is_like`
 			]
 		};
-		const result = await DB.find('posts', 'all', condition);
-		if (result.length === 0) {
+		const result = await DB.find('posts', 'first', condition);
+		if (!result) {
 			throw new ApiError(lang[Request.lang].wrongPost, 422);
+		}
+		if (result.profile.length > 0) {
+			result.profile = appURL + 'uploads/' + result.profile;
+		}
+		if (result.cover_pic.length > 0) {
+			result.cover_pic = appURL + 'uploads/' + result.cover_pic;
 		}
 		return {
 			message: lang[Request.lang].getPost,
-			data: app.addUrl(result, ['profile', 'cover_pic', 'media'])[0]
+			data: result
 		};
 	}
 };
