@@ -18,6 +18,7 @@ class UserController extends ApiController {
 		let required = {
 			username: req.body.username,
 			email: req.body.email,
+			phone: req.body.phone,
 			password: req.body.password,
 			device_id: req.body.device_id,
 			verfiy_badge: false,
@@ -27,7 +28,7 @@ class UserController extends ApiController {
 		let non_required = {
 			device_type: req.body.device_type,
 			device_token: req.body.device_token,
-			authorization_key: app.createToken(),
+			authorization_key: app.createToken()
 		};
 
 		let request_data = await super.vaildation(required, non_required);
@@ -35,7 +36,9 @@ class UserController extends ApiController {
 			request_data.profile = await app.upload_pic_with_await(req.files.profile);
 		}
 		if (req.files && req.files.cover_pic) {
-			request_data.cover_pic = await app.upload_pic_with_await(req.files.cover_pic);
+			request_data.cover_pic = await app.upload_pic_with_await(
+				req.files.cover_pic
+			);
 		}
 		const user_id = await DB.save('users', request_data);
 		request_data.lang = req.lang;
@@ -62,7 +65,7 @@ class UserController extends ApiController {
 		let non_required = {
 			device_type: req.body.device_type,
 			device_token: req.body.device_token,
-			authorization_key: app.createToken(),
+			authorization_key: app.createToken()
 		};
 		const requestData = await super.vaildation(required, non_required);
 		const checkPhone = await DB.find('users', 'first', {
@@ -72,11 +75,11 @@ class UserController extends ApiController {
 		});
 		if (checkPhone) requestData.id = checkPhone.id;
 		const user_id = await DB.save('users', requestData);
-		if (!checkPhone) { 
+		if (!checkPhone) {
 			await DB.save('users', {
 				id: user_id,
 				username: `${user_id}User`
-			})
+			});
 		}
 		setTimeout(() => {
 			this.saveAuth(requestData, user_id);
@@ -105,7 +108,7 @@ class UserController extends ApiController {
 			social_id: req.body.social_id,
 			social_token: req.body.social_token,
 			soical_type: req.body.soical_type,
-			device_id: req.body.device_id,
+			device_id: req.body.device_id
 		};
 		const non_required = {
 			device_type: req.body.device_type,
@@ -124,20 +127,20 @@ class UserController extends ApiController {
 					social_id: request_data.social_id
 				}
 			},
-			fields: [ 'id' ]
+			fields: ['id']
 		});
 		if (soical_id) {
 			request_data.id = soical_id.id;
-		} 
+		}
 		let id = await DB.save('users', request_data);
 		setTimeout(() => {
 			this.saveAuth(requestData, id);
 		}, 100);
-		if (!soical_id) { 
+		if (!soical_id) {
 			await DB.save('users', {
 				id,
 				username: `${id}User`
-			})
+			});
 		}
 		return {
 			message: 'User login successfully',
@@ -180,7 +183,7 @@ class UserController extends ApiController {
 			conditions: {
 				email: request_data.email
 			},
-			fields: [ 'id', 'email', 'username', 'name' ]
+			fields: ['id', 'email', 'username', 'name']
 		});
 		if (!user_info) throw new ApiError(lang[req.lang].mailNotFound);
 		user_info.otp = request_data.otp;
@@ -223,10 +226,11 @@ class UserController extends ApiController {
 			conditions: {
 				email: request_data.email
 			},
-			fields: [ 'id', 'password', 'status', 'email' ]
+			fields: ['id', 'password', 'status', 'email']
 		});
 		if (login_details) {
-			if (request_data.password !== login_details.password) throw new ApiError(lang[req.lang].wrongLogin);
+			if (request_data.password !== login_details.password)
+				throw new ApiError(lang[req.lang].wrongLogin);
 			delete login_details.password;
 			const authSave = {
 				device_id: request_data.device_id,
@@ -250,7 +254,7 @@ class UserController extends ApiController {
 		}
 		throw new ApiError(lang[req.lang].wrongLogin);
 	}
-	
+
 	async appInfo(req) {
 		const app_info = await DB.find('app_informations', 'all');
 		return {
@@ -306,14 +310,14 @@ class UserController extends ApiController {
 				`0 as is_request`,
 				`0 as i_follow`
 			],
-			limit: [ offset, limit ],
-			orderBy: [ 'users.username asc' ]
+			limit: [offset, limit],
+			orderBy: ['users.username asc']
 		};
 		if (search) {
 			condition.conditions['like'] = {
 				first_name: search,
 				last_name: search,
-				email: search,
+				email: search
 			};
 		}
 		if (user_id !== 0) {
@@ -329,14 +333,14 @@ class UserController extends ApiController {
 			condition.fields.push(
 				`(select count(id) from friends where friend_id=${user_id} and user_id=users.id and is_request=0) as is_follow`
 			);
-		} 
+		}
 		const user_info = await DB.find('users', 'all', condition);
 		const message = 'user listing';
 		return {
 			message,
 			data: {
 				pagination: await super.Paginations('users', condition, page, limit),
-				result: app.addUrl(user_info, [ 'profile', 'cover_pic' ])
+				result: app.addUrl(user_info, ['profile', 'cover_pic'])
 			}
 		};
 	}
@@ -347,15 +351,21 @@ class UserController extends ApiController {
 		const otherinfo = {
 			total_following: 0,
 			total_follower: 0,
-			total_posts: 0,
+			total_posts: 0
 		};
 		user_info.is_follow = 0;
 		user_info.i_request = 0;
 		user_info.is_request = 0;
 		user_info.i_follow = 0;
-		const total_following = await DB.first(`select count(id) as total from friends where user_id=${user_id}  and is_request=0`);
-		const total_follower = await DB.first(`select count(id) as total from friends where friend_id=${user_id}  and is_request=0`);
-		const total_posts = await DB.first(`select count(id) as total from posts where user_id=${user_id}`);
+		const total_following = await DB.first(
+			`select count(id) as total from friends where user_id=${user_id}  and is_request=0`
+		);
+		const total_follower = await DB.first(
+			`select count(id) as total from friends where friend_id=${user_id}  and is_request=0`
+		);
+		const total_posts = await DB.first(
+			`select count(id) as total from posts where user_id=${user_id}`
+		);
 		if (user_id !== loginId) {
 			const i_follow = await DB.first(
 				`select count(id) as total from friends where user_id=${loginId} and friend_id=${user_id} and is_request=0`
@@ -378,12 +388,15 @@ class UserController extends ApiController {
 		otherinfo.total_follower = total_follower[0].total;
 		otherinfo.total_posts = total_posts[0].total;
 		let posts = [];
-		if ((user_info.is_private === 1 && user_info.i_follow === 1) || user_info.is_private === 0) { 
+		if (
+			(user_info.is_private === 1 && user_info.i_follow === 1) ||
+			user_info.is_private === 0
+		) {
 			posts = app.addUrl(
-			await DB.first(
-				`select *, (select count(id) from post_likes where post_id = posts.id and user_id = ${user_id}) as is_like from posts where user_id = ${user_id} order by id desc limit 10`
-			),
-			'media'
+				await DB.first(
+					`select *, (select count(id) from post_likes where post_id = posts.id and user_id = ${user_id}) as is_like from posts where user_id = ${user_id} order by id desc limit 10`
+				),
+				'media'
 			);
 		}
 		return {
@@ -409,18 +422,25 @@ class UserController extends ApiController {
 			longitude: req.body.longitude
 		};
 		const request_data = await super.vaildation(required, non_required);
-		if (request_data.username) { 
-			const checkUserName = await DB.first(`select username from users where username= '${request_data.username}' and id != ${request_data.id} limit 1`);
-			if (checkUserName.length > 0) { 
-				throw new ApiError(`this username already register please choice anotherone`, 422);
+		if (request_data.username) {
+			const checkUserName = await DB.first(
+				`select username from users where username= '${request_data.username}' and id != ${request_data.id} limit 1`
+			);
+			if (checkUserName.length > 0) {
+				throw new ApiError(
+					`this username already register please choice anotherone`,
+					422
+				);
 			}
 		}
-		
+
 		if (req.files && req.files.profile) {
 			request_data.profile = await app.upload_pic_with_await(req.files.profile);
 		}
 		if (req.files && req.files.cover_pic) {
-			request_data.cover_pic = await app.upload_pic_with_await(req.files.cover_pic);
+			request_data.cover_pic = await app.upload_pic_with_await(
+				req.files.cover_pic
+			);
 		}
 		await DB.save('users', request_data);
 		return {
