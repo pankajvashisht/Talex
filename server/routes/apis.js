@@ -4,7 +4,7 @@ const {
 	UserController,
 	PostController,
 	FriendController,
-	ChatController
+	ChatController,
 } = require('../src/Controller/v1/index');
 const { UserAuth, Language, AuthSkip } = require('../src/middleware/index');
 const Apiresponse = require('../libary/ApiResponse');
@@ -12,14 +12,14 @@ let user = new UserController();
 const chat = new ChatController();
 
 router.use([Language, AuthSkip, UserAuth]);
-router.get('/', function(req, res) {
+router.get('/', function (req, res) {
 	res.send(' APi workings ');
 });
 
 router.post('/signup/email', Apiresponse(user.signupEmail));
 router.post('/signup/phone', Apiresponse(user.signupPhone));
 router.post('/user/login/', Apiresponse(user.loginUser));
-router.get('/user/listing/:offset([0-9]+)?', Apiresponse(user.userListing));
+router.get('/user/listing/', Apiresponse(user.userListing));
 router.post('/update-profile', Apiresponse(user.updateProfile));
 router.get('/user/profile/', Apiresponse(user.userProfile));
 router.get('/category', Apiresponse(user.Catgeory));
@@ -40,31 +40,22 @@ router.delete(
 );
 router.delete('/friend/', Apiresponse(FriendController.unFriend));
 router.post('/request/accept/', Apiresponse(FriendController.acceptRequest));
-router.get(
-	'/follow/:offset([0-9]+)?/',
-	Apiresponse(FriendController.friendRequestList)
-);
-router.get(
-	'/followers/:offset([0-9]+)?/',
-	Apiresponse(FriendController.friends)
-);
-router.get(
-	'/notifications/:offset([0-9]+)?/',
-	Apiresponse(PostController.notifications)
-);
+router.get('/follow/', Apiresponse(FriendController.friendRequestList));
+router.get('/followers', Apiresponse(FriendController.friends));
+router.get('/notifications', Apiresponse(PostController.notifications));
 router.get('/chat/last/:lang?', Apiresponse(chat.lastChat));
 router.get(
 	'/posts/details/:post_id([0-9]+)/:lang?',
 	Apiresponse(PostController.postDetails)
 );
 router
-	.route('/posts/:offset([0-9]+)?/:lang?')
+	.route('/posts/:lang?')
 	.get(Apiresponse(PostController.getPosts))
 	.post(Apiresponse(PostController.addPost))
 	.put(Apiresponse(PostController.addPost))
 	.delete(Apiresponse(PostController.deletePost));
 router
-	.route('/posts/comment/:post_id([0-9]+)?/:offset([0-9]+)?/:lang?')
+	.route('/posts/comment/:post_id([0-9]+)?/:lang?')
 	.get(Apiresponse(PostController.getComments))
 	.post(Apiresponse(PostController.comment))
 	.put(Apiresponse(PostController.comment))

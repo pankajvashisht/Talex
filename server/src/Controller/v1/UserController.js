@@ -23,12 +23,12 @@ class UserController extends ApiController {
 			device_id: req.body.device_id,
 			verfiy_badge: false,
 			status: 0,
-			checkexist: 1
+			checkexist: 1,
 		};
 		let non_required = {
 			device_type: req.body.device_type,
 			device_token: req.body.device_token,
-			authorization_key: app.createToken()
+			authorization_key: app.createToken(),
 		};
 
 		let request_data = await super.vaildation(required, non_required);
@@ -50,7 +50,7 @@ class UserController extends ApiController {
 		userInfo.authorization_key = request_data.authorization_key;
 		return {
 			message: lang[req.lang].signup,
-			data: userInfo
+			data: userInfo,
 		};
 	}
 
@@ -60,25 +60,25 @@ class UserController extends ApiController {
 			device_id: req.body.device_id,
 			verfiy_badge: false,
 			status: 1,
-			checkexist: 0
+			checkexist: 0,
 		};
 		let non_required = {
 			device_type: req.body.device_type,
 			device_token: req.body.device_token,
-			authorization_key: app.createToken()
+			authorization_key: app.createToken(),
 		};
 		const requestData = await super.vaildation(required, non_required);
 		const checkPhone = await DB.find('users', 'first', {
 			conditions: {
-				phone: requestData.phone
-			}
+				phone: requestData.phone,
+			},
 		});
 		if (checkPhone) requestData.id = checkPhone.id;
 		const user_id = await DB.save('users', requestData);
 		if (!checkPhone) {
 			await DB.save('users', {
 				id: user_id,
-				username: `${user_id}User`
+				username: `${user_id}User`,
 			});
 		}
 		setTimeout(() => {
@@ -88,7 +88,7 @@ class UserController extends ApiController {
 		userInfo.authorization_key = requestData.authorization_key;
 		return {
 			message: lang[req.lang].signup,
-			data: userInfo
+			data: userInfo,
 		};
 	}
 
@@ -98,7 +98,7 @@ class UserController extends ApiController {
 			device_type: data.device_type || 1,
 			device_token: data.device_token || '',
 			device_id: data.device_id,
-			user_id: user_id
+			user_id: user_id,
 		};
 		await DB.save('user_auths', authSave);
 	}
@@ -108,7 +108,7 @@ class UserController extends ApiController {
 			social_id: req.body.social_id,
 			social_token: req.body.social_token,
 			soical_type: req.body.soical_type,
-			device_id: req.body.device_id
+			device_id: req.body.device_id,
 		};
 		const non_required = {
 			device_type: req.body.device_type,
@@ -116,7 +116,7 @@ class UserController extends ApiController {
 			name: req.body.name,
 			email: req.body.email,
 			status: 1,
-			authorization_key: app.createToken()
+			authorization_key: app.createToken(),
 		};
 
 		let request_data = await super.vaildation(required, non_required);
@@ -124,10 +124,10 @@ class UserController extends ApiController {
 			conditions: {
 				or: {
 					email: request_data.email,
-					social_id: request_data.social_id
-				}
+					social_id: request_data.social_id,
+				},
 			},
-			fields: ['id']
+			fields: ['id'],
 		});
 		if (soical_id) {
 			request_data.id = soical_id.id;
@@ -139,18 +139,18 @@ class UserController extends ApiController {
 		if (!soical_id) {
 			await DB.save('users', {
 				id,
-				username: `${id}User`
+				username: `${id}User`,
 			});
 		}
 		return {
 			message: 'User login successfully',
-			data: await super.userDetails(id)
+			data: await super.userDetails(id),
 		};
 	}
 
 	async verifyOtp(req) {
 		let required = {
-			otp: req.body.otp
+			otp: req.body.otp,
 		};
 		let non_required = {};
 		let request_data = await super.vaildation(required, non_required);
@@ -161,29 +161,29 @@ class UserController extends ApiController {
 		await DB.save('users', req.body.userInfo);
 		return {
 			message: lang[req.lang].verifyOtp,
-			data: await super.userDetails(req.body.userInfo.id)
+			data: await super.userDetails(req.body.userInfo.id),
 		};
 	}
 
 	async Catgeory(Request) {
 		return {
 			message: lang[Request.lang].bussinessCatgeory,
-			data: await DB.find('categories', 'all')
+			data: await DB.find('categories', 'all'),
 		};
 	}
 
 	async forgotPassword(req) {
 		let required = {
 			email: req.body.email,
-			otp: app.randomNumber()
+			otp: app.randomNumber(),
 		};
 		let non_required = {};
 		let request_data = await super.vaildation(required, non_required);
 		let user_info = await DB.find('users', 'first', {
 			conditions: {
-				email: request_data.email
+				email: request_data.email,
 			},
-			fields: ['id', 'email', 'username', 'name']
+			fields: ['id', 'email', 'username', 'name'],
 		});
 		if (!user_info) throw new ApiError(lang[req.lang].mailNotFound);
 		user_info.otp = request_data.otp;
@@ -196,15 +196,15 @@ class UserController extends ApiController {
 			data: {
 				first_name: user_info.username,
 				last_name: user_info.name,
-				url: appURL + 'users/change_password/' + user_info.forgot_password_hash
-			}
+				url: appURL + 'users/change_password/' + user_info.forgot_password_hash,
+			},
 		};
 		setTimeout(() => {
 			app.send_mail(mail);
 		}, 100);
 		return {
 			message: lang[req.lang].otpSend,
-			data: []
+			data: [],
 		};
 	}
 
@@ -212,21 +212,21 @@ class UserController extends ApiController {
 		const required = {
 			email: req.body.email,
 			password: req.body.password,
-			device_id: req.body.device_id
+			device_id: req.body.device_id,
 		};
 		const non_required = {
 			device_type: req.body.device_type || 0,
 			device_token: req.body.device_token || '',
 			last_login: app.currentTime,
-			authorization_key: app.createToken()
+			authorization_key: app.createToken(),
 		};
 
 		let request_data = await super.vaildation(required, non_required);
 		let login_details = await DB.find('users', 'first', {
 			conditions: {
-				email: request_data.email
+				email: request_data.email,
 			},
-			fields: ['id', 'password', 'status', 'email']
+			fields: ['id', 'password', 'status', 'email'],
 		});
 		if (login_details) {
 			if (request_data.password !== login_details.password)
@@ -236,7 +236,7 @@ class UserController extends ApiController {
 				device_id: request_data.device_id,
 				device_type: request_data.device_type,
 				device_token: request_data.device_token,
-				authorization_key: request_data.authorization_key
+				authorization_key: request_data.authorization_key,
 			};
 			await this.saveAuth(authSave, login_details.id);
 			login_details = await super.userDetails(login_details.id);
@@ -249,7 +249,7 @@ class UserController extends ApiController {
 			}
 			return {
 				message: lang[req.lang].LoginMessage,
-				data: login_details
+				data: login_details,
 			};
 		}
 		throw new ApiError(lang[req.lang].wrongLogin);
@@ -259,13 +259,13 @@ class UserController extends ApiController {
 		const app_info = await DB.find('app_informations', 'all');
 		return {
 			message: lang[req.lang].appInfo,
-			data: app_info
+			data: app_info,
 		};
 	}
 	async changePassword(req) {
 		const required = {
 			old_password: req.body.old_password,
-			new_password: req.body.new_password
+			new_password: req.body.new_password,
 		};
 		const request_data = await super.vaildation(required, {});
 		const loginInfo = req.body.userInfo;
@@ -276,12 +276,12 @@ class UserController extends ApiController {
 		await DB.save('users', loginInfo);
 		return {
 			message: lang[req.lang].passwordchange,
-			data: []
+			data: [],
 		};
 	}
 	async userListing(Request) {
 		const user_id = Request.body.user_id || 0;
-		let offset = Request.params.offset || 1;
+		let offset = Request.query.page_no || 1;
 		const limit = Request.query.limit || 10;
 		const search = Request.query.search || '';
 		const page = parseInt(offset);
@@ -290,8 +290,8 @@ class UserController extends ApiController {
 			conditions: {
 				status: 1,
 				NotEqual: {
-					id: user_id
-				}
+					id: user_id,
+				},
 			},
 			fields: [
 				'users.id',
@@ -308,16 +308,16 @@ class UserController extends ApiController {
 				`0 as is_follow`,
 				`0 as i_request`,
 				`0 as is_request`,
-				`0 as i_follow`
+				`0 as i_follow`,
 			],
 			limit: [offset, limit],
-			orderBy: ['users.username asc']
+			orderBy: ['users.username asc'],
 		};
 		if (search) {
 			condition.conditions['like'] = {
 				first_name: search,
 				last_name: search,
-				email: search
+				email: search,
 			};
 		}
 		if (user_id !== 0) {
@@ -340,8 +340,8 @@ class UserController extends ApiController {
 			message,
 			data: {
 				pagination: await super.Paginations('users', condition, page, limit),
-				result: app.addUrl(user_info, ['profile', 'cover_pic'])
-			}
+				result: app.addUrl(user_info, ['profile', 'cover_pic']),
+			},
 		};
 	}
 	async userProfile(Request) {
@@ -351,7 +351,7 @@ class UserController extends ApiController {
 		const otherinfo = {
 			total_following: 0,
 			total_follower: 0,
-			total_posts: 0
+			total_posts: 0,
 		};
 		user_info.is_follow = 0;
 		user_info.i_request = 0;
@@ -404,13 +404,13 @@ class UserController extends ApiController {
 			data: {
 				user_info,
 				otherinfo,
-				posts
-			}
+				posts,
+			},
 		};
 	}
 	async updateProfile(req) {
 		const required = {
-			id: req.body.user_id
+			id: req.body.user_id,
 		};
 		const non_required = {
 			name: req.body.name,
@@ -419,7 +419,7 @@ class UserController extends ApiController {
 			is_private: req.body.is_private,
 			location: req.body.location,
 			latitude: req.body.latitude,
-			longitude: req.body.longitude
+			longitude: req.body.longitude,
 		};
 		const request_data = await super.vaildation(required, non_required);
 		if (request_data.username) {
@@ -445,14 +445,14 @@ class UserController extends ApiController {
 		await DB.save('users', request_data);
 		return {
 			message: lang[req.lang].profileUpdate,
-			data: await super.userDetails(request_data.id)
+			data: await super.userDetails(request_data.id),
 		};
 	}
 
 	async logout(req) {
 		const required = {
 			id: req.body.user_id,
-			device_id: req.body.device_id
+			device_id: req.body.device_id,
 		};
 		const requestData = await super.vaildation(required, {});
 		await DB.first(
@@ -460,7 +460,7 @@ class UserController extends ApiController {
 		);
 		return {
 			message: lang[req.lang].logoutUser,
-			data: []
+			data: [],
 		};
 	}
 
@@ -472,8 +472,8 @@ class UserController extends ApiController {
 			data: {
 				first_name: request_data.username,
 				last_name: request_data.username,
-				url: appURL + 'users/verify/' + request_data.authorization_key
-			}
+				url: appURL + 'users/verify/' + request_data.authorization_key,
+			},
 		};
 		try {
 			app.send_mail(mail);
