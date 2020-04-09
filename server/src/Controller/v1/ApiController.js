@@ -121,7 +121,7 @@ class ApiController {
 			totalPage = 1;
 		}
 		return {
-			currentPage: Math.round(page / limit, 0),
+			currentPage: Math.round(page / limit, 0) + 1,
 			totalPage,
 			totalRecord: totalRecord[0].totalRecord,
 			limit,
