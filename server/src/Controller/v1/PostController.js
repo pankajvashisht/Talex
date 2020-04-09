@@ -342,6 +342,7 @@ module.exports = {
 		const friend_post = Request.query.friend_post && Request.body.user_id;
 		const user_post = Request.body.user_id && Request.query.my_post;
 		const user_id = Request.body.user_id || Request.query.user_id;
+		const category_id = Request.query.category_id || 0;
 		offset = (offset - 1) * limit;
 		if (Request.query.friend_post && !Request.body.user_id) {
 			throw new ApiError(lang[Request.lang].needLogin, 401);
@@ -390,6 +391,11 @@ module.exports = {
 			condition.fields.push(
 				`(select count(id) from post_likes where post_id = posts.id and user_id = ${Request.body.user_id}) as is_like`
 			);
+		}
+		if (parseInt(category_id) !== 0) {
+			condition.conditions = {
+				category_id,
+			};
 		}
 		const result = await DB.find('posts', 'all', condition);
 		return {
