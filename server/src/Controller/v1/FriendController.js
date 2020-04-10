@@ -174,14 +174,14 @@ module.exports = {
 		const limit = Request.query.limit || 10;
 		const search = Request.query.search || '';
 		offset = (offset - 1) * limit;
-		const follower = parseInt(Request.query.follower) || 0;
+		const following = parseInt(Request.query.following) || 0;
 		const joins =
-			follower !== 0
-				? `users on (users.id = friends.user_id and is_request=0)`
-				: `users on users.id = friends.friend_id and is_request=0`;
+			following !== 0
+				? `users on (users.id = friends.user_id)`
+				: `users on users.id = friends.friend_id`;
 		const condition = {
 			conditions: {
-				friend_id: user_id,
+				user_id,
 				is_request: 0,
 			},
 			join: [joins],
@@ -205,6 +205,9 @@ module.exports = {
 			limit: [offset, limit],
 			orderBy: ['users.name desc'],
 		};
+		following !== 0
+			? (condition.conditions['friend_id'] = user_id)
+			: (condition.conditions['user_id'] = user_id);
 		if (search) {
 			condition.conditions['like'] = {
 				name: search,
