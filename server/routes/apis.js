@@ -33,7 +33,7 @@ router.post('/posts/dislike/', Apiresponse(PostController.likePost));
 router.post('/posts/share/', Apiresponse(PostController.share));
 router.post('/posts/report/', Apiresponse(PostController.reportPost));
 router.post('/follow', Apiresponse(FriendController.follow));
-router.post('/Unfollow', Apiresponse(FriendController.unFollow));
+router.post('/unfollow', Apiresponse(FriendController.unFollow));
 router.delete(
 	'/request/reject/:lang?',
 	Apiresponse(FriendController.rejectRequest)

@@ -66,8 +66,8 @@ module.exports = {
 		const user_id = Request.body.user_id;
 		const checkPost = await DB.find('friends', 'first', {
 			conditions: {
-				friend_id: Request.body.user_id,
-				user_id: friend_id,
+				friend_id: friend_id,
+				user_id: user_id,
 				is_request: 0,
 			},
 		});
