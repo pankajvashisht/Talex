@@ -363,6 +363,10 @@ module.exports = {
 				'posts.*',
 				'0 as is_like',
 				'0 as is_fav',
+				'0 as i_follow',
+				'0 as i_request',
+				'0 as is_request',
+				'0 as is_follow',
 			],
 			limit: [offset, limit],
 			orderBy: ['id desc'],
@@ -389,7 +393,11 @@ module.exports = {
 		}
 		if (Request.body.hasOwnProperty('user_id')) {
 			condition.fields.push(
-				`(select count(id) from post_likes where post_id = posts.id and user_id = ${Request.body.user_id}) as is_like`
+				`(select count(id) from post_likes where post_id = posts.id and user_id = ${Request.body.user_id}) as is_like`,
+				`(select count(id) from friends where user_id=${Request.body.user_id} and friend_id=posts.user_id) as i_follow`,
+				`(select count(id) from friends where user_id=${Request.body.user_id} and friend_id=posts.user_id and is_request=1) as i_request`,
+				`(select count(id) from friends where friend_id=${Request.body.user_id} and friend_id=posts.user_id and is_request=1) as is_request`,
+				`(select count(id) from friends where friend_id=${Request.body.user_id} and friend_id=posts.user_id) as is_follow`
 			);
 		}
 		if (parseInt(category_id) !== 0) {
