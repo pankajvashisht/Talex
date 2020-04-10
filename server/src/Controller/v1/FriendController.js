@@ -176,7 +176,7 @@ module.exports = {
 		offset = (offset - 1) * limit;
 		const following = parseInt(Request.query.following) || 0;
 		const joins =
-			following !== 0
+			following === 0
 				? `users on (users.id = friends.user_id)`
 				: `users on users.id = friends.friend_id`;
 		const condition = {
@@ -205,7 +205,7 @@ module.exports = {
 			limit: [offset, limit],
 			orderBy: ['users.name desc'],
 		};
-		following !== 0
+		following === 0
 			? (condition.conditions['friend_id'] = user_id)
 			: (condition.conditions['user_id'] = user_id);
 		if (search) {
