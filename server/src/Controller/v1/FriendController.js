@@ -174,13 +174,17 @@ module.exports = {
 		const limit = Request.query.limit || 10;
 		const search = Request.query.search || '';
 		offset = (offset - 1) * limit;
-		const filter = Request.query.filter || false;
+		const follower = parseInt(Request.query.follower) || 0;
+		const joins =
+			follower !== 0
+				? `users on (users.id = friends.user_id and is_request=0)`
+				: `users on users.id = friends.friend_id and is_request=0`;
 		const condition = {
 			conditions: {
 				friend_id: user_id,
 				is_request: 0,
 			},
-			join: ['users on users.id = friends.user_id'],
+			join: [joins],
 			fields: [
 				'users.id',
 				'name',
@@ -206,16 +210,6 @@ module.exports = {
 				name: search,
 				username: search,
 			};
-		}
-		if (JSON.parse(filter)) {
-			const searchParameter = Constants.UserSearch;
-			searchParameter.forEach((value) => {
-				if (Request.query.hasOwnProperty(value)) {
-					if (Request.query[value]) {
-						condition.conditions[value] = Request.query[value];
-					}
-				}
-			});
 		}
 		const user_info = await DB.find('friends', 'all', condition);
 		return {
