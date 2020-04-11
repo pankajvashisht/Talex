@@ -270,9 +270,9 @@ module.exports = {
 				post_id,
 			},
 		});
-		if (viewDetails) {
+		if (!viewDetails) {
 			await DB.save('post_views', requestData);
-			postDetails.total_view += 1;
+			postDetails.total_views += 1;
 			increareCount(postDetails);
 		}
 		return {
