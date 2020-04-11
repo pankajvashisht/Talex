@@ -237,18 +237,46 @@ module.exports = {
 			post_id: Request.body.post_id,
 		};
 		const requestData = await apis.vaildation(required, {});
-		const postDetails = await DB.find('posts', 'all', {
+		const postDetails = await DB.find('posts', 'first', {
 			conditions: {
 				id: requestData.post_id,
 			},
 		});
-		if (postDetails.length === 0)
-			throw new ApiError(lang[Request.lang].wrongPost, 422);
+		if (!postDetails) throw new ApiError(lang[Request.lang].wrongPost, 422);
 		await DB.save('post_shares', requestData);
-		postDetails[0].total_shares += 1;
-		increareCount(postDetails[0]);
+		postDetails.total_shares += 1;
+		increareCount(postDetails);
 		return {
 			message: lang[Request.lang].sharePost,
+			data: [],
+		};
+	},
+	viewPost: async (Request) => {
+		const required = {
+			user_id: Request.body.user_id,
+			post_id: Request.body.post_id,
+		};
+		const requestData = await apis.vaildation(required, {});
+		const postDetails = await DB.find('posts', 'first', {
+			conditions: {
+				id: requestData.post_id,
+			},
+		});
+		if (!postDetails) throw new ApiError(lang[Request.lang].wrongPost, 422);
+		const { user_id, post_id } = requestData;
+		const viewDetails = await DB.find('post_views', 'first', {
+			conditions: {
+				user_id,
+				post_id,
+			},
+		});
+		if (viewDetails) {
+			await DB.save('post_views', requestData);
+			postDetails.total_view += 1;
+			increareCount(postDetails);
+		}
+		return {
+			message: 'View Successfully',
 			data: [],
 		};
 	},

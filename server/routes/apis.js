@@ -45,6 +45,8 @@ router.get('/follow/', Apiresponse(FriendController.friendRequestList));
 router.get('/followers', Apiresponse(FriendController.friends));
 router.get('/notifications', Apiresponse(PostController.notifications));
 router.get('/chat/last/:lang?', Apiresponse(chat.lastChat));
+router.post('/view-post', Apiresponse(PostController.viewPost));
+router.post('/share-post', Apiresponse(PostController.share));
 router.get(
 	'/posts/details/:post_id([0-9]+)/:lang?',
 	Apiresponse(PostController.postDetails)
