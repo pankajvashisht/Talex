@@ -10,7 +10,8 @@ const missingRoutes = {
 	category: 'GET',
 	'user/listing': 'GET',
 	'posts/comment': 'GET',
-	'posts/details': 'GET'
+	'posts/details': 'GET',
+	'trending-post': 'GET',
 };
 const AuthSkip = (Req, res, next) => {
 	res.auth = true;
@@ -27,7 +28,7 @@ const AuthSkip = (Req, res, next) => {
 	next();
 };
 
-const makeUrl = Req => {
+const makeUrl = (Req) => {
 	let url = Req.path.split('/');
 	url.shift();
 	if (url.indexOf(Req.lang) !== -1) {

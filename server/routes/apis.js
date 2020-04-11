@@ -34,6 +34,7 @@ router.post('/posts/share/', Apiresponse(PostController.share));
 router.post('/posts/report/', Apiresponse(PostController.reportPost));
 router.post('/follow', Apiresponse(FriendController.follow));
 router.post('/unfollow', Apiresponse(FriendController.unFollow));
+router.get('/trending-post', Apiresponse(PostController.getTrendingPosts));
 router.delete(
 	'/request/reject/:lang?',
 	Apiresponse(FriendController.rejectRequest)

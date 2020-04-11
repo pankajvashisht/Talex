@@ -100,6 +100,54 @@ module.exports = {
 			data: [],
 		};
 	},
+	getTrendingPosts: async (Request) => {
+		const condition = {
+			conditions: {
+				'users.is_private': 0,
+				greater: {
+					'posts.created': app.currentTime - 86400 * 15,
+				},
+			},
+			join: ['users on (users.id = posts.user_id)'],
+			fields: [
+				'users.name',
+				'users.username',
+				'users.status',
+				'users.email',
+				'users.phone',
+				'users.cover_pic',
+				'users.about_us',
+				'users.profile',
+				'users.is_private',
+				'users.verfiy_badge',
+				'posts.*',
+				'0 as is_like',
+				'0 as is_fav',
+				'0 as i_follow',
+				'0 as i_request',
+				'0 as is_request',
+				'0 as is_follow',
+			],
+			limit: [0, 20],
+			orderBy: ['created asc, total_likes desc, total_comments desc'],
+			having: ['(total_likes >= 3)'],
+		};
+		if (Request.body.hasOwnProperty('user_id')) {
+			const { user_id } = Request.body;
+			condition.fields.push(
+				`(select count(id) from post_likes where post_id = posts.id and user_id = ${user_id}) as is_like`,
+				`(select count(id) from friends where user_id=${user_id} and friend_id=posts.user_id) as i_follow`,
+				`(select count(id) from friends where user_id=${user_id} and friend_id=posts.user_id and is_request=1) as i_request`,
+				`(select count(id) from friends where friend_id=${user_id} and friend_id=posts.user_id and is_request=1) as is_request`,
+				`(select count(id) from friends where friend_id=${user_id} and friend_id=posts.user_id) as is_follow`
+			);
+		}
+		const result = await DB.find('posts', 'all', condition);
+		return {
+			message: lang[Request.lang].getPost,
+			data: app.addUrl(result, ['profile', 'cover_pic']),
+		};
+	},
 	favPost: async (Request) => {
 		const required = {
 			user_id: Request.body.user_id,
