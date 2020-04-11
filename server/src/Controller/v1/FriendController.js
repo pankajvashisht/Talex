@@ -33,7 +33,17 @@ module.exports = {
 			message = 'unfollow users successfully';
 		} else {
 			await DB.save('friends', requestData);
-			sendPush(user_info, 'start following you', 5);
+			const { username } = Request.body.userInfo;
+			const pushMessage = user_info.is_private
+				? 'sent you successfully'
+				: 'start following you';
+			saveNotification({
+				friend_id: requestData.user_id,
+				user_id: requestData.friend_id,
+				post_id: 0,
+				type: user_info.is_private ? 6 : 5,
+				text: ` ${username} ${pushMessage}`,
+			});
 			message = user_info.is_private
 				? 'Request send successfully'
 				: 'Follow successfully';
@@ -223,6 +233,19 @@ module.exports = {
 			},
 		};
 	},
+};
+
+const saveNotification = async (notification) => {
+	if (notification.user_id !== notification.friend_id) {
+		DB.save('notifications', notification);
+		notification.notification_code = notification.type;
+		const pushObject = {
+			message: notification.text,
+			notification_code: notification.type,
+			body: notification,
+		};
+		apis.sendPush(pushObject, notification.user_id);
+	}
 };
 
 const sendPush = (User, message = '', code = 6) => {
