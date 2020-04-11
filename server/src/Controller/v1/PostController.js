@@ -130,7 +130,7 @@ module.exports = {
 			],
 			limit: [0, 20],
 			orderBy: ['created asc, total_likes desc, total_comments desc'],
-			having: ['(total_likes >= 3)'],
+			having: ['total_likes >= 3'],
 		};
 		if (Request.body.hasOwnProperty('user_id')) {
 			const { user_id } = Request.body;
