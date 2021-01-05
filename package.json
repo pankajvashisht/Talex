@@ -16,7 +16,7 @@
     "@ckeditor/ckeditor5-react": "^2.0.0",
     "@glidejs/glide": "^3.3.0",
     "availity-reactstrap-validation": "^2.0.4",
-    "axios": "^0.19.0",
+    "axios": "^0.21.1",
     "body-parser": "^1.19.0",
     "chart.js": "2.7.2",
     "ckeditor4-react": "^1.0.0-beta.2",
