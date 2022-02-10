@@ -38,7 +38,7 @@
     "morgan": "~1.9.1",
     "mousetrap": "^1.6.3",
     "mysql": "^2.17.1",
-    "node-sass": "^4.13.1",
+    "node-sass": "^7.0.0",
     "nodemailer": "^6.4.2",
     "nodemon": "^2.0.2",
     "push-notification-node": "^1.0.5",
